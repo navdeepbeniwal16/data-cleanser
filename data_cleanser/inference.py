@@ -17,6 +17,7 @@ class InferedDataType:
     FLOAT = 'float64'
     FLOAT64 = 'float64'
     FLOAT32 = 'float32'
+    DATETIME64 = 'datetime64'
 
 def infer_formatted_numeric_type(data_column):
     # Matching for comma ',' or currency symbol '$' separated integers or floats values
@@ -90,6 +91,13 @@ def infer_numeric_type(data_column):
     else:
         # Checking for formatted numeric strings
         inferred_formatted_numeric_type = infer_formatted_numeric_type(data_column)
+
+        # Checking for datatime
+        try:
+            pd.to_datetime(data_column)
+            return InferedDataType.DATETIME64
+        except (ValueError, TypeError):
+            pass
 
         if inferred_formatted_numeric_type == InferedDataType.FLOAT64 or inferred_formatted_numeric_type == InferedDataType.INT64:
             return inferred_formatted_numeric_type
