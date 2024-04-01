@@ -209,23 +209,24 @@ class TestInference(unittest.TestCase):
         inferred_type = infer_data_type(df, 'col')
         self.assertEqual(inferred_type, 'datetime64')
 
-    def test_datetime_format_HMS(self):
-        # Test format "%H:%M:%S"
-        df = pd.DataFrame({'col': ['13:45:30']})
-        inferred_type = infer_data_type(df, 'col')
-        self.assertEqual(inferred_type, 'datetime64')
+    # Primarily needs to be inferred as timedelta
+    # def test_datetime_format_HMS(self):
+    #     # Test format "%H:%M:%S"
+    #     df = pd.DataFrame({'col': ['13:45:30']})
+    #     inferred_type = infer_data_type(df, 'col')
+    #     self.assertEqual(inferred_type, 'datetime64')
 
-    def test_datetime_format_HMSf(self):
-        # Test format "%H:%M:%S.%f"
-        df = pd.DataFrame({'col': ['13:45:30.123456']})
-        inferred_type = infer_data_type(df, 'col')
-        self.assertEqual(inferred_type, 'datetime64')
+    # def test_datetime_format_HMSf(self):
+    #     # Test format "%H:%M:%S.%f"
+    #     df = pd.DataFrame({'col': ['13:45:30.123456']})
+    #     inferred_type = infer_data_type(df, 'col')
+    #     self.assertEqual(inferred_type, 'datetime64')
 
-    def test_datetime_format_HM(self):
-        # Test format "%H:%M"
-        df = pd.DataFrame({'col': ['13:45']})
-        inferred_type = infer_data_type(df, 'col')
-        self.assertEqual(inferred_type, 'datetime64')
+    # def test_datetime_format_HM(self):
+    #     # Test format "%H:%M"
+    #     df = pd.DataFrame({'col': ['13:45']})
+    #     inferred_type = infer_data_type(df, 'col')
+    #     self.assertEqual(inferred_type, 'datetime64')
 
     def test_datetime_format_BdY(self):
         # Test format "%B %d, %Y"
@@ -293,6 +294,48 @@ class TestInference(unittest.TestCase):
     #     df = pd.DataFrame({'col': ['2023']})
     #     inferred_type = infer_data_type(df, 'col')
     #     self.assertEqual(inferred_type, 'datetime64')
+        
+    def test_timedelta_format_HH_MM_SS(self):
+        # Test format HH:MM:SS
+        df = pd.DataFrame({'col': ['12:34:56']})
+        inferred_type = infer_data_type(df, 'col')
+        self.assertEqual(inferred_type, 'timedelta64[ns]')
+
+    def test_timedelta_format_HH_MM_SS_SSS(self):
+        # Test format HH:MM:SS.SSS
+        df = pd.DataFrame({'col': ['12:34:56.789']})
+        inferred_type = infer_data_type(df, 'col')
+        self.assertEqual(inferred_type, 'timedelta64[ns]')
+
+    def test_timedelta_format_DD_days_HH_MM_SS(self):
+        # Test format DD days HH:MM:SS
+        df = pd.DataFrame({'col': ['5 days 12:34:56']})
+        inferred_type = infer_data_type(df, 'col')
+        self.assertEqual(inferred_type, 'timedelta64[ns]')
+
+    def test_timedelta_format_DD_days_HH_MM_SS_SSS(self):
+        # Test format DD days HH:MM:SS.SSS
+        df = pd.DataFrame({'col': ['5 days 12:34:56.789']})
+        inferred_type = infer_data_type(df, 'col')
+        self.assertEqual(inferred_type, 'timedelta64[ns]')
+
+    def test_timedelta_format_DD_HH_MM_SS(self):
+        # Test format DD:HH:MM:SS
+        df = pd.DataFrame({'col': ['5:12:34:56']})
+        inferred_type = infer_data_type(df, 'col')
+        self.assertEqual(inferred_type, 'timedelta64[ns]')
+
+    def test_timedelta_format_DD_HH_MM_SS_SSS(self):
+        # Test format DD:HH:MM:SS.SSS
+        df = pd.DataFrame({'col': ['5:12:34:56.789']})
+        inferred_type = infer_data_type(df, 'col')
+        self.assertEqual(inferred_type, 'timedelta64[ns]')
+
+    def test_timedelta_format_DD_HH_MM_SS_comma_SSS(self):
+        # Test format DD:HH:MM:SS,SSS
+        df = pd.DataFrame({'col': ['5:12:34:56,789']})
+        inferred_type = infer_data_type(df, 'col')
+        self.assertEqual(inferred_type, 'timedelta64[ns]')
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
