@@ -19,6 +19,8 @@ class InferedDataType:
     FLOAT32 = 'float32'
     DATETIME64 = 'datetime64'
     TIMEDELTA64 = 'timedelta64[ns]'
+    BOOLEAN = 'bool'
+    CATEGORY = 'category'
 
 """
 Calculates non-na values percentage in a dataframe
@@ -151,6 +153,15 @@ def infer_datetime_type(data_column):
 def infer_timedelta_type(data_column):
     if is_timedelta_type(data_column):
         return InferedDataType.TIMEDELTA64
+    
+def is_boolean_type(data_column):
+    boolean_formats = ['1', '0', 'true', 'false', 't', 'f']
+    boolean_count = 0
+    for val in data_column:
+        if str(val).strip().lower() in boolean_formats:
+            boolean_count += 1
+
+    return boolean_count / len(data_column) > INFERENCE_THRESHOLD_PERCENTAGE
 
 def infer_data_type(dataframe, col):
     data_column = dataframe[col]
@@ -160,19 +171,31 @@ def infer_data_type(dataframe, col):
     # Inferring numeric data type
     inferred_data_type = infer_numeric_type(data_column)
     if inferred_data_type in [InferedDataType.FLOAT32, InferedDataType.FLOAT64, InferedDataType.INT8, InferedDataType.INT16, InferedDataType.INT32, InferedDataType.INT64]:
+        # Checking for boolean (0, 1) numerics
+        if is_boolean_type(data_column):
+            print("Data column has boolean values...", [c for c in data_column])
+            return InferedDataType.BOOLEAN
+        
         return inferred_data_type
     
     # Inferring timedelta[na] data type
-    inferred_data_type = infer_timedelta_type(data_column)
+    inferred_data_type = infer_timedelta_type(data_column)    
     if inferred_data_type == InferedDataType.TIMEDELTA64:
-        return inferred_data_type
+            return inferred_data_type
     
     # Inferring datetime data type
     inferred_data_type = infer_datetime_type(data_column)
     if inferred_data_type == InferedDataType.DATETIME64:
         return inferred_data_type
 
-    # TODO: Inferring categorical data
+    # Inferring boolean data type
+    if is_boolean_type(data_column):
+        return InferedDataType.BOOLEAN
+    
+    # Inferring categorical data
+    if get_non_na_values_percentage(data_column) > INFERENCE_THRESHOLD_PERCENTAGE and len(data_column.unique()) / len(data_column) < 0.5: # TODO: 
+            return InferedDataType.CATEGORY
+
     # TODO: Inferring complex data
 
 

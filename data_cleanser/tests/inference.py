@@ -337,5 +337,91 @@ class TestInference(unittest.TestCase):
         inferred_type = infer_data_type(df, 'col')
         self.assertEqual(inferred_type, 'timedelta64[ns]')
 
+    """
+    Testing boolean data
+    """
+    def test_numeric_1_0(self):
+        # Test '1' and '0'
+        df = pd.DataFrame({'col': ['1', '0']})
+        self.assertEqual(infer_data_type(df, 'col'), 'bool')
+
+    def test_boolean_True_False(self):
+        # Test 'True' and 'False'
+        df = pd.DataFrame({'col': ['True', 'False']})
+        self.assertEqual(infer_data_type(df, 'col'), 'bool')
+
+    def test_boolean_TRUE_FALSE(self):
+        # Test 'TRUE' and 'FALSE'
+        df = pd.DataFrame({'col': ['TRUE', 'FALSE']})
+        self.assertEqual(infer_data_type(df, 'col'), 'bool')
+
+    def test_boolean_true_false(self):
+        # Test 'true' and 'false'
+        df = pd.DataFrame({'col': ['true', 'false']})
+        self.assertEqual(infer_data_type(df, 'col'), 'bool')
+
+    def test_boolean_T_F(self):
+        # Test 'T' and 'F'
+        df = pd.DataFrame({'col': ['T', 'F']})
+        self.assertEqual(infer_data_type(df, 'col'), 'bool')
+
+    def test_boolean_True_False_mixed_case(self):
+        # Test 'True', 'False', 'true', 'false' in mixed case
+        df = pd.DataFrame({'col': ['True', 'False', 'true', 'false']})
+        self.assertEqual(infer_data_type(df, 'col'), 'bool')
+
+    """
+    Testing categorical data
+    """
+    def test_single_category(self):
+        # Test a single category
+        df = pd.DataFrame({'col': ['A'] * 8 + ['B']})
+        self.assertEqual(infer_data_type(df, 'col'), 'category')
+
+    def test_multiple_categories(self):
+        # Test multiple categories
+        df = pd.DataFrame({'col': ['A'] * 5 + ['B'] * 5 + ['C']})
+        self.assertEqual(infer_data_type(df, 'col'), 'category')
+
+    def test_mixed_categories_and_strings(self):
+        # Test mixed categories and strings
+        df = pd.DataFrame({'col': ['A'] * 6 + ['B'] * 3 + ['C'] * 2 + ['other category']})
+        self.assertEqual(infer_data_type(df, 'col'), 'category')
+
+    # def test_categories_with_spaces(self):
+    #     # Test categories with leading/trailing spaces
+    #     df = pd.DataFrame({'col': [' A'] * 5 + ['B '] * 5 + [' C ']})
+    #     self.assertEqual(infer_data_type(df, 'col'), 'category')
+
+    def test_categories_with_different_cases(self):
+        # Test categories with different cases
+        df = pd.DataFrame({'col': ['A'] * 4 + ['B'] * 3 + ['b'] * 3 + ['C'] + ['D']})
+        self.assertEqual(infer_data_type(df, 'col'), 'category')
+
+    # def test_categories_with_numeric_values(self):
+    #     # Test categories with numeric values
+    #     df = pd.DataFrame({'col': [1] * 5 + [2] * 4 + [3]})
+    #     self.assertEqual(infer_data_type(df, 'col'), 'category')
+
+    # def test_categories_with_numeric_values_mixed(self):
+    #     # Test categories with numeric values mixed with string values
+    #     df = pd.DataFrame({'col': ['1'] * 5 + [2] * 4 + ['A'] * 2})
+    #     self.assertEqual(infer_data_type(df, 'col'), 'category')
+
+    def test_categories_with_nan_values(self):
+        # Test categories with NaN values
+        df = pd.DataFrame({'col': ['A'] * 4 + ['B'] * 3 + ['C'] + [float('nan')] * 2})
+        self.assertEqual(infer_data_type(df, 'col'), 'category')
+
+    def test_categories_with_duplicates(self):
+        # Test categories with duplicate values
+        df = pd.DataFrame({'col': ['A'] * 3 + ['B'] * 2 + ['A']})
+        self.assertEqual(infer_data_type(df, 'col'), 'category')
+
+    # def test_empty_dataframe(self):
+    #     # Test an empty dataframe
+    #     df = pd.DataFrame({'col': []})
+    #     self.assertEqual(infer_data_type(df, 'col'), 'category')
+
 if __name__ == '__main__':
     unittest.main(verbosity=2)
