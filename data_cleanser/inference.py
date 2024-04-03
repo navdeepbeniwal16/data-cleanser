@@ -80,7 +80,7 @@ def is_timedelta_type(data_column):
 def is_datetime_type(data_column):
     try:
         dc_converted = pd.to_datetime(data_column, errors='raise')
-        if get_non_na_values_percentage(dc_converted) / len(data_column) > INFERENCE_THRESHOLD_PERCENTAGE:
+        if get_non_na_values_percentage(dc_converted) > INFERENCE_THRESHOLD_PERCENTAGE:
             return True
         return False
             
@@ -147,14 +147,6 @@ def infer_numeric_type(data_column):
             return inferred_formatted_numeric_type
         
     return InferedDataType.OBJECT
-
-def infer_datetime_type(data_column):
-    if is_datetime_type(data_column):
-        return InferedDataType.DATETIME64
-    
-def infer_timedelta_type(data_column):
-    if is_timedelta_type(data_column):
-        return InferedDataType.TIMEDELTA64
     
 def is_boolean_type(data_column):
     boolean_formats = ['1', '0', 'true', 'false', 't', 'f']
@@ -187,46 +179,49 @@ def is_complex_type(data_column):
     return complex_values_count / len(data_column) > INFERENCE_THRESHOLD_PERCENTAGE
 
 
-def infer_data_type(dataframe, col):
-    data_column = dataframe[col]
-    inferred_data_type = data_column.dtype
-    print("Received data type:", inferred_data_type) # TODO: TBR
+def infer_data_type(data_column):
+    # Returning 'object' type if passed dataframe column in empty or more than a threshold values are na
+    if len(data_column) == 0 or get_non_na_values_percentage(data_column) <= INFERENCE_THRESHOLD_PERCENTAGE:
+        return InferedDataType.OBJECT
 
     # Inferring numeric data type
     inferred_data_type = infer_numeric_type(data_column)
     if inferred_data_type in [InferedDataType.FLOAT32, InferedDataType.FLOAT64, InferedDataType.INT8, InferedDataType.INT16, InferedDataType.INT32, InferedDataType.INT64]:
         # Checking for boolean (0, 1) numerics
         if is_boolean_type(data_column):
-            print("Data column has boolean values...", [c for c in data_column])
             return InferedDataType.BOOLEAN
         
         return inferred_data_type
     
-    # Inferring timedelta[na] data type
-    inferred_data_type = infer_timedelta_type(data_column)    
-    if inferred_data_type == InferedDataType.TIMEDELTA64:
-            return inferred_data_type
+    # Inferring timedelta[na] data type 
+    if is_timedelta_type(data_column):
+            return InferedDataType.TIMEDELTA64
     
     # Inferring datetime data type
-    inferred_data_type = infer_datetime_type(data_column)
-    if inferred_data_type == InferedDataType.DATETIME64:
-        return inferred_data_type
+    if is_datetime_type(data_column):
+        return InferedDataType.DATETIME64
 
     # Inferring boolean data type
     if is_boolean_type(data_column):
         return InferedDataType.BOOLEAN
     
     # Inferring categorical data
-    if get_non_na_values_percentage(data_column) > INFERENCE_THRESHOLD_PERCENTAGE and is_categorical_type(data_column): # TODO: 
+    if is_categorical_type(data_column): 
             return InferedDataType.CATEGORY
 
-    # TODO: Inferring complex data
-    if get_non_na_values_percentage(data_column) > INFERENCE_THRESHOLD_PERCENTAGE and is_complex_type(data_column):
+    # Inferring complex data
+    if is_complex_type(data_column):
         return InferedDataType.COMPLEX
 
     return InferedDataType.OBJECT
+
 """
 Method to return the data-types of all of the columns in the dataframe passed
 """    
 def infer_data_types(dataframe):
-    return
+    inferred_data_types = dict()
+    for col in list(dataframe.columns):
+        inferred_data_types[col] = infer_data_type(dataframe[col])
+
+    print("Inferred data types")
+    return inferred_data_types
