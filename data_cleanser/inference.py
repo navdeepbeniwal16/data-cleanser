@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+import re
 
 MAX_INTEGER_CHECKABLE_FLOAT = 2.0 ** 53 # Max integer value that can be checked appropriately via is_integer()
 INFERENCE_THRESHOLD_PERCENTAGE = 0.5 # Threshold percentage of valid values in a data column to accurately infer the type
@@ -21,6 +22,7 @@ class InferedDataType:
     TIMEDELTA64 = 'timedelta64[ns]'
     BOOLEAN = 'bool'
     CATEGORY = 'category'
+    COMPLEX = 'complex'
 
 """
 Calculates non-na values percentage in a dataframe
@@ -163,6 +165,28 @@ def is_boolean_type(data_column):
 
     return boolean_count / len(data_column) > INFERENCE_THRESHOLD_PERCENTAGE
 
+def is_categorical_type(data_column):
+    return len(data_column.unique()) / len(data_column) < 0.5
+
+def is_complex_type(data_column):
+    complex_data_formats = [
+        r'([-+]?\d*\.?\d+)\s*([-+])\s*(\d*\.?\d+)j',
+        r'\(\s*([-+]?\d*\.?\d+)\s*,\s*([-+]?\d*\.?\d+)\s*\)',
+        r'([-+]?\d*\.?\d*)\s*([-+])\s*(\d*\.?\d*)\s*\*\s*j',
+        r'\d+\*(cos\(\d+(\.\d+)?\)\+j\*sin\(\d+(\.\d+)?\))',
+        r'\(\s*([-+]?\d*\.?\d+)\s*\+\s*([-+]?\d*\.?\d+)j\s*\)'
+    ]
+
+    complex_values_count = 0
+    for value in data_column:
+        for format in complex_data_formats:
+            if re.compile(format).match(str(value).strip()):
+                complex_values_count += 1
+                break
+    
+    return complex_values_count / len(data_column) > INFERENCE_THRESHOLD_PERCENTAGE
+
+
 def infer_data_type(dataframe, col):
     data_column = dataframe[col]
     inferred_data_type = data_column.dtype
@@ -193,12 +217,14 @@ def infer_data_type(dataframe, col):
         return InferedDataType.BOOLEAN
     
     # Inferring categorical data
-    if get_non_na_values_percentage(data_column) > INFERENCE_THRESHOLD_PERCENTAGE and len(data_column.unique()) / len(data_column) < 0.5: # TODO: 
+    if get_non_na_values_percentage(data_column) > INFERENCE_THRESHOLD_PERCENTAGE and is_categorical_type(data_column): # TODO: 
             return InferedDataType.CATEGORY
 
     # TODO: Inferring complex data
+    if get_non_na_values_percentage(data_column) > INFERENCE_THRESHOLD_PERCENTAGE and is_complex_type(data_column):
+        return InferedDataType.COMPLEX
 
-
+    return InferedDataType.OBJECT
 """
 Method to return the data-types of all of the columns in the dataframe passed
 """    
