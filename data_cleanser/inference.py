@@ -18,7 +18,7 @@ class InferedDataType:
     FLOAT = 'float64'
     FLOAT64 = 'float64'
     FLOAT32 = 'float32'
-    DATETIME64 = 'datetime64'
+    DATETIME64 = 'datetime64[ns]'
     TIMEDELTA64 = 'timedelta64[ns]'
     BOOLEAN = 'bool'
     CATEGORY = 'category'
