@@ -90,20 +90,61 @@ def convert_column_to_category(df, column, missing_values='ignore', default_valu
     except ValueError as e:
         raise ValueError(f'Error converting column "{column}" to {InferedDataType.CATEGORY}: {str(e)}')
 
+boolean_map = { True: True, False: False, 'True': True, 'TRUE': True, 'true': True, '1': True, 'T': True, 't': True, 'False': False, 'FALSE': False, 'false': False, '0': False, 'F': False, 'f': False }
 
-def convert_column_to_boolean(df, column):
+def map_boolean(value):
+    if value in boolean_map:
+        return boolean_map[value]
+    else:
+        raise ValueError(f'Invalid boolean value: {value}')
+
+def convert_column_to_boolean(df, column, errors='raise', missing_values='ignore', default_value=False):
     """
-    Convert a column in the DataFrame to a boolean data type.
+    Convert a column in the DataFrame to a boolean data type
 
     Args:
-    - df (pd.DataFrame): Input DataFrame.
-    - column (str): Column name to convert.
+    - df (pd.DataFrame): Input DataFrame
+    - column (str): Column name to convert
+    - errors (str): To handle errors in conversion. Default is 'raise'. Options are 'ignore', 'coerce', 'raise'.
+    - missing_values (str): To handle missing values. Default is 'ignore'. Options are 'ignore', 'default', 'delete'.
+    - default_value: Default value to use for missing values. Default is False
 
     Returns:
-    - pd.DataFrame: DataFrame with specified column converted to boolean data type.
+    - pd.DataFrame: DataFrame with specified column converted to boolean data type
     """
-    # Your implementation here
-    pass
+
+    dataframe_has_column(df, column)
+
+    # Return dataframe if the dataframe column already is of boolean type
+    if df[column].dtype == InferedDataType.BOOLEAN:
+        return df
+
+    # Convert the column to a boolean type
+    try:
+        df_copy = df.copy()  # Create a copy of the DataFrame to avoid modifying the original
+
+        # Handle invalid values based on set option for errors
+        if errors == 'ignore':
+            pass
+        elif errors == 'coerce':
+            df_copy[column] = df_copy[column].map(boolean_map)
+        elif errors == 'raise':
+            df_copy[column] = df_copy[column].map(map_boolean)
+
+        # Handle missing values based on set option for missing_values
+        if missing_values == MISSING_VALUE_OPTIONS.IGNORE:
+            pass
+        elif missing_values == MISSING_VALUE_OPTIONS.DEFAULT:
+            df_copy[column] = df_copy[column].fillna(default_value).map(map_boolean)
+        elif missing_values == MISSING_VALUE_OPTIONS.DELETE:
+            df_copy = df_copy.dropna(subset=[column])
+            df_copy[column] = df_copy[column].map(map_boolean)
+        
+        return df_copy
+    except ValueError as e:
+        raise ValueError(f'Error converting column "{column}" to {InferedDataType.BOOLEAN}: {str(e)}')
+
+
 
 def convert_data_types(df, dtype_mapping):
     """
