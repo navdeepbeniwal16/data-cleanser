@@ -49,7 +49,7 @@ def convert_column_to_datetime(df, column, errors='raise', missing_values='ignor
         if missing_values == MISSING_VALUE_OPTIONS.IGNORE:
             df_copy[column] = pd.to_datetime(df_copy[column], errors=errors)
         elif missing_values == MISSING_VALUE_OPTIONS.DEFAULT:          
-            df_copy[column] = pd.to_datetime(df_copy[column], errors=errors, infer_datetime_format=True).fillna(default_value)
+            df_copy[column] = pd.to_datetime(df_copy[column], errors=errors).fillna(default_value)
         elif missing_values == MISSING_VALUE_OPTIONS.DELETE:
             df_copy.dropna(subset=[column], inplace=True)
             df_copy[column] = pd.to_datetime(df_copy[column], errors=errors)
