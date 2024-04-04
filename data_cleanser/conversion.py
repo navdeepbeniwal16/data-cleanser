@@ -12,7 +12,9 @@ class _MISSING_VALUE_OPTIONS:
     DEFAULT = 'default'
     DELETE = 'delete'
 
-
+""" 
+Private helper functions to support conversion apis
+"""
 def _dataframe_has_column(df, column):
     # Check if the column exists in the passed in dataframe
     if column not in df:
@@ -29,7 +31,14 @@ def _is_valid_missing_value_option(option):
     missing_value_options = _MISSING_VALUE_OPTIONS.__dict__.values()
     if option not in missing_value_options:
         raise KeyError(f'Invalid argument for \'missing_values\'. Please provide one of {missing_value_options}')
+    
+_boolean_map = { True: True, False: False, 'True': True, 'TRUE': True, 'true': True, '1': True, 'T': True, 't': True, 'False': False, 'FALSE': False, 'false': False, '0': False, 'F': False, 'f': False }
 
+def _map_boolean(value):
+    if value in _boolean_map:
+        return _boolean_map[value]
+    else:
+        raise ValueError(f'Invalid boolean value: {value}')
 
 def _parse_formatted_numeric_string(numeric_string):
     """
@@ -151,6 +160,10 @@ def convert_column_to_datetime(df, column, errors='raise', missing_values='ignor
     - pd.DataFrame: DataFrame with specified column converted to datetime data type.
     """
 
+    # Handling invalid errors and missing_values arguments
+    _is_valid_error_handling_option(errors)
+    _is_valid_missing_value_option(missing_values)
+
     _dataframe_has_column(df, column)
 
     # Convert the column to a datetime type
@@ -183,6 +196,9 @@ def convert_column_to_category(df, column, missing_values='ignore', default_valu
     Returns:
     - pd.DataFrame: DataFrame with specified column converted to categorical data type.
     """
+
+    # Handling missing_values arguments
+    _is_valid_missing_value_option(missing_values)
     
     _dataframe_has_column(df, column)
 
@@ -201,15 +217,6 @@ def convert_column_to_category(df, column, missing_values='ignore', default_valu
         raise ValueError(f'Error converting column "{column}" to {InferedDataType.CATEGORY}: {str(e)}')
 
 
-boolean_map = { True: True, False: False, 'True': True, 'TRUE': True, 'true': True, '1': True, 'T': True, 't': True, 'False': False, 'FALSE': False, 'false': False, '0': False, 'F': False, 'f': False }
-
-def map_boolean(value):
-    if value in boolean_map:
-        return boolean_map[value]
-    else:
-        raise ValueError(f'Invalid boolean value: {value}')
-
-
 def convert_column_to_boolean(df, column, errors='raise', missing_values='ignore', default_value=False):
     """
     Convert a column in the DataFrame to a boolean data type
@@ -225,6 +232,10 @@ def convert_column_to_boolean(df, column, errors='raise', missing_values='ignore
     - pd.DataFrame: DataFrame with specified column converted to boolean data type
     """
 
+    # Handling invalid errors and missing_values arguments
+    _is_valid_error_handling_option(errors)
+    _is_valid_missing_value_option(missing_values)
+
     _dataframe_has_column(df, column)
 
     # Return dataframe if the dataframe column already is of boolean type
@@ -239,24 +250,23 @@ def convert_column_to_boolean(df, column, errors='raise', missing_values='ignore
         if errors == 'ignore':
             pass
         elif errors == 'coerce':
-            df_copy[column] = df_copy[column].map(boolean_map)
+            df_copy[column] = df_copy[column].map(_boolean_map)
         elif errors == 'raise':
-            df_copy[column] = df_copy[column].map(map_boolean)
+            df_copy[column] = df_copy[column].map(_map_boolean)
 
         # Handle missing values based on set option for missing_values
         if missing_values == _MISSING_VALUE_OPTIONS.IGNORE:
             pass
         elif missing_values == _MISSING_VALUE_OPTIONS.DEFAULT:
-            df_copy[column] = df_copy[column].fillna(default_value).map(map_boolean)
+            df_copy[column] = df_copy[column].fillna(default_value).map(_map_boolean)
         elif missing_values == _MISSING_VALUE_OPTIONS.DELETE:
             df_copy = df_copy.dropna(subset=[column])
-            df_copy[column] = df_copy[column].map(map_boolean)
+            df_copy[column] = df_copy[column].map(_map_boolean)
         
         return df_copy
     except ValueError as e:
         raise ValueError(f'Error converting column "{column}" to {InferedDataType.BOOLEAN}: {str(e)}')
-
-
+    
 
 def convert_data_types(df, dtype_mapping):
     """
