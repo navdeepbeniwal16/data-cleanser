@@ -1,13 +1,9 @@
+import unittest
 import pandas as pd
 import numpy as np
 import pytest
 from data_cleanser import conversion as conversion_engine
 from data_cleanser.inference import InferedDataType
-
-
-import pytest
-import numpy as np
-import pandas as pd
 
 """
 Testing conversion to datetime data type
@@ -259,3 +255,125 @@ def test_convert_column_to_boolean_mixed():
     result = conversion_engine.convert_column_to_boolean(df, column_name)
     assert result[column_name].dtype == 'bool'
     assert result[column_name].tolist() == [True, False, True, False, True]
+
+"""
+Testing convert_column_to_numeric api to convert column in a dataframe to 'numeric' data type
+"""
+class TestConvertColumnToNumeric(unittest.TestCase):
+
+    def test_convert_column_to_numeric_int8(self):
+        # Tests conversion to int8
+        column_name = 'col'
+        data = {column_name: [-100, 0, 100, 127, -128]}
+        df = pd.DataFrame(data)
+        result = conversion_engine.convert_column_to_numeric(df, column_name, numeric_type='int8')
+        self.assertTrue(result[column_name].dtype == InferedDataType.INT8)
+
+    def test_convert_column_to_numeric_int16(self):
+        # Tests conversion to int16
+        column_name = 'col'
+        data = {column_name: [-10000, 0, 10000, 32767, -32768]}
+        df = pd.DataFrame(data)
+        result = conversion_engine.convert_column_to_numeric(df, column_name, numeric_type='int16')
+        self.assertTrue(result[column_name].dtype == InferedDataType.INT16)
+
+    def test_convert_column_to_numeric_int32(self):
+        # Tests conversion to int32
+        column_name = 'col'
+        data = {column_name: [-2147483648, 0, 2147483647]}
+        df = pd.DataFrame(data)
+        result = conversion_engine.convert_column_to_numeric(df, column_name, numeric_type='int32')
+        self.assertTrue(result[column_name].dtype == InferedDataType.INT32)
+
+    def test_convert_column_to_numeric_int64(self):
+        # Tests conversion to int64
+        column_name = 'col'
+        data = {column_name: [-9223372036854775808, 0, 9223372036854775807]}
+        df = pd.DataFrame(data)
+        result = conversion_engine.convert_column_to_numeric(df, column_name, numeric_type='int64')
+        self.assertTrue(result[column_name].dtype == InferedDataType.INT64)
+
+    def test_convert_column_to_numeric_float32(self):
+        # Tests conversion to float32
+        column_name = 'col'
+        data = {column_name: [3.402823466e+38, 0, -3.402823466e+38]}
+        df = pd.DataFrame(data)
+        result = conversion_engine.convert_column_to_numeric(df, column_name, numeric_type='float32')
+        self.assertTrue(result[column_name].dtype == InferedDataType.FLOAT32)
+
+    def test_convert_column_to_numeric_float64(self):
+        #  Tests conversion to float64
+        column_name = 'col'
+        data = {column_name: [1.7976931348623157e+308, 0, -1.7976931348623157e+308]}
+        df = pd.DataFrame(data)
+        result = conversion_engine.convert_column_to_numeric(df, column_name, numeric_type='float64')
+        self.assertTrue(result[column_name].dtype == InferedDataType.FLOAT64)
+
+    def test_convert_column_to_numeric_valid_mixed_data_types(self):
+        # Tests handling of valid mixed data types
+        column_name = 'col'
+        data = {column_name: [1, 2.5, '3', True]}
+        df = pd.DataFrame(data)
+        result = conversion_engine.convert_column_to_numeric(df, column_name, numeric_type='float64')
+        self.assertTrue(result[column_name].dtype == InferedDataType.FLOAT64)
+
+    # Handling invalid numeric values
+    def test_convert_column_to_numeric_mixed_data_types_raise_errors(self):
+        # Tests raising errors for invalid values
+        column_name = 'col'
+        data = {column_name: [1, 2.5, '3', 'abc', True]}
+        df = pd.DataFrame(data)
+        with pytest.raises(ValueError):
+            conversion_engine.convert_column_to_numeric(df, column_name, numeric_type='float64', errors='raise', missing_values='ignore') 
+
+    def test_convert_column_to_numeric_mixed_data_types_coerce_errors(self):
+        # Tests coercing errors for invalid values
+        column_name = 'col'
+        data = {column_name: [1, 2.5, '3', 'abc', True]}
+        df = pd.DataFrame(data)
+        result = conversion_engine.convert_column_to_numeric(df, column_name, numeric_type='float64', errors='coerce', missing_values='ignore')
+        self.assertTrue(result[column_name].dtype == InferedDataType.FLOAT64)
+        self.assertTrue(result[column_name].isna().sum() == 1)
+
+    # Handling missing values
+    def test_convert_column_to_numeric_mixed_data_types_raise_errors_ignore_missing_values(self):
+        # Tests raising errors for invalid values and ignoring missing values
+        column_name = 'col'
+        data = {column_name: [1, 2.5, 3.9, np.nan, None]}
+        df = pd.DataFrame(data)
+        result = conversion_engine.convert_column_to_numeric(df, column_name, numeric_type='float64', errors='raise', missing_values='ignore')
+        self.assertTrue(result[column_name].dtype == InferedDataType.FLOAT64)
+        print("Data:", result[column_name])
+        self.assertTrue(pd.isna(result[column_name][3])) 
+        self.assertTrue(pd.isna(result[column_name][4]))
+
+    def test_convert_column_to_numeric_mixed_data_types_raise_errors_default_missing_values(self):
+        # Tests raising errors for invalid values and using a default value for missing values
+        column_name = 'col'
+        data = {column_name: [1, 2.5, 3.9, np.nan, None]}
+        df = pd.DataFrame(data)
+        result = conversion_engine.convert_column_to_numeric(df, column_name, numeric_type='float64', errors='raise', missing_values='default', default_value=-1)
+        self.assertTrue(result[column_name].dtype == InferedDataType.FLOAT64)
+        self.assertTrue(result[column_name][3] == -1) 
+        self.assertTrue(result[column_name][4] == -1) 
+
+    def test_convert_column_to_numeric_mixed_data_types_raise_errors_delete_missing_values(self):
+        # Tests raising errors for invalid values and deleting missing values
+        column_name = 'col'
+        data = {column_name: [1, 2.5, 3.9, np.nan, None]}
+        df = pd.DataFrame(data)
+        result = conversion_engine.convert_column_to_numeric(df, column_name, numeric_type='float64', errors='raise', missing_values='delete')
+        self.assertTrue(result[column_name].dtype == InferedDataType.FLOAT64)
+        self.assertTrue(len(result[column_name]) == 3) # missing values should be deleted
+
+    def test_convert_column_to_numeric_non_standard_numeric_formats(self):
+        # Tests conversion of non-standard numeric formats ie comma separated integers, decimals, currency symbols, percentage signs, exponential and scienctific notations 
+        column_name = 'col'
+        data = {column_name: ['1,000', '$100,00',  '2,050.5', '$2,050.502', '50.5%', '1.23 x 10^5', '1.23e+05'] }
+        df = pd.DataFrame(data)
+        result = conversion_engine.convert_column_to_numeric(df, column_name, numeric_type='float64')
+        print(result)
+        self.assertTrue(result[column_name].dtype == InferedDataType.FLOAT64)
+
+if __name__ == '__main__':
+    unittest.main()
