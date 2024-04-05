@@ -266,7 +266,101 @@ def convert_column_to_boolean(df, column, errors='raise', missing_values='ignore
         return df_copy
     except ValueError as e:
         raise ValueError(f'Error converting column "{column}" to {InferedDataType.BOOLEAN}: {str(e)}')
+
+def _parse_pandas_unsupported_timedelta_format(timedelta_string):
+    """
+    Parse timedelta strings in pandas unsupported format to Timedelta object
+
+    Args:
+    - timedelta_string (str): String representing timedelta in unsupported format
+
+    Returns:
+    - pd.Timedelta: Timedelta object parsed from the input string
+    """
     
+    # Handling dd_hh_mm_ss (eg '5:01:02:03')
+    if re.match(r'^(\d+):(\d{2}):(\d{2}):(\d{2})$', timedelta_string):
+        parts = timedelta_string.split(':')
+        days, hours, minutes, seconds = int(parts[0]), int(parts[1]), int(parts[2]), int(parts[3])
+        return pd.Timedelta(days=days, hours=hours, minutes=minutes, seconds=seconds)
+
+    # Handling dd_hh_mm_ss_sss: (eg '5:01:02:03.456')
+    elif re.match(r'^(\d+):\d{2}:\d{2}:\d{2}\.\d{3}$', timedelta_string):
+        parts = timedelta_string.split(':')
+        days, hours, minutes, seconds, milliseconds = int(parts[0]), int(parts[1]), int(parts[2]), int(parts[3].split('.')[0]), int(parts[3].split('.')[1])
+        return pd.Timedelta(days=days, hours=hours, minutes=minutes, seconds=seconds, milliseconds=milliseconds)
+
+    # Handling dd_hh_mm_ss_comma_sss: (eg '5:01:02:03,456')
+    elif re.match(r'^\d+:\d{2}:\d{2}:\d{2},\d{3}$', timedelta_string):
+        parts = timedelta_string.split(':')
+        days, hours, minutes, seconds, milliseconds = int(parts[0]), int(parts[1]), int(parts[2]), int(parts[3].split(',')[0]), int(parts[3].split(',')[1])
+        return pd.Timedelta(days=days, hours=hours, minutes=minutes, seconds=seconds, milliseconds=milliseconds)
+
+    # Handling hh_mm: (eg '5:01')
+    elif re.match(r'^\d+:\d{2}$', timedelta_string):
+        parts = timedelta_string.split(':')
+        hours, minutes, seconds = int(parts[0]), int(parts[1]), 0 
+        return pd.Timedelta(hours=hours, minutes=minutes, seconds=seconds)
+
+    # Handling HH:MM AM/PM (eg '12:34 PM')
+    elif re.match(r'^(\d{1,2}):(\d{2}) (AM|PM)$', timedelta_string):
+        parts = re.match(r'^(\d{1,2}):(\d{2}) (AM|PM)$', timedelta_string).groups()
+        hours = int(parts[0])
+        if parts[2] == 'PM' and hours != 12:
+            hours += 12
+        elif parts[2] == 'AM' and hours == 12:
+            hours = 0
+        return pd.Timedelta(hours=hours, minutes=int(parts[1]))
+
+    else:
+        raise ValueError(f"Invalid timedelta format: {timedelta_string}")
+    
+
+def convert_column_to_timedelta(df, column, errors='raise', missing_values='ignore', default_value=pd.Timedelta(0)):
+    """
+    Convert a column in the DataFrame to a timedelta data type.
+
+    Args:
+    - df (pd.DataFrame): Input DataFrame.
+    - column (str): Column name to convert.
+    - errors (str): How to handle errors in conversion. Default is 'raise'. Options are 'ignore', 'coerce', 'raise'.
+    - missing_values (str): How to handle missing values. Default is 'ignore'. Options are 'ignore', 'default', 'delete'.
+    - default_value: Default value to use for missing values. Default is pd.Timedelta(0).
+
+    Returns:
+    - pd.DataFrame: DataFrame with the specified column converted to timedelta data type.
+    """
+    
+    # Handling invalid errors and missing_values arguments
+    error_options = [_ERROR_HANDLING_OPTIONS.RAISE, _ERROR_HANDLING_OPTIONS.COERCE]
+    if errors not in error_options:
+        raise KeyError(f'Invalid argument for \'errors\'. Please provide one of {error_options}')
+    _is_valid_missing_value_option(missing_values)
+
+    _dataframe_has_column(df, column)
+
+    # Convert the column to a timedelta type
+    try:
+        df_copy = df.copy()  # Create a copy of the DataFrame to avoid modifying the original
+        if missing_values == _MISSING_VALUE_OPTIONS.IGNORE:
+            df_copy[column] = pd.to_timedelta(df_copy[column], errors=errors)
+        elif missing_values == _MISSING_VALUE_OPTIONS.DEFAULT:          
+            df_copy[column] = pd.to_timedelta(df_copy[column], errors=errors).fillna(default_value)
+        elif missing_values == _MISSING_VALUE_OPTIONS.DELETE:
+            df_copy.dropna(subset=[column], inplace=True)
+            df_copy[column] = pd.to_timedelta(df_copy[column], errors=errors)
+        else:
+            raise ValueError('Invalid value for missing_values. Use one of "ignore", "default", or "delete".')
+        
+        return df_copy
+    except ValueError as e:
+        # Check for pandas to_timedelta() unsupported timedelta formats
+        try:
+            df_copy[column] = df_copy[column].map(str).map(_parse_pandas_unsupported_timedelta_format)
+            return df_copy
+        except ValueError:
+            raise ValueError(f'Error converting column "{column}" to {InferedDataType.TIMEDELTA64}: {str(e)}')
+
 
 def convert_data_types(df, dtype_mapping):
     """
