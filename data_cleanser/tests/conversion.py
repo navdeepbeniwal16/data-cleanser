@@ -534,6 +534,39 @@ class TestConvertColumnToTimedelta(unittest.TestCase):
     #     result = conversion_engine.convert_column_to_timedelta(self.df, 'col', missing_values='delete')
     #     self.assertTrue(result['col'].dtype == 'timedelta64[ns]')
     #     self.assertTrue(len(result['col']) == 5)
+        
+class TestConvertDataTypes(unittest.TestCase):
+
+    def test_convert_data_types(self):
+        data = {
+            'int_col': [1, 2, 3],
+            'float_col': [1.0, 2.0, 3.0],
+            'bool_col': ['TRUE', 'FALSE', 'TRUE'],
+            'datetime_col': ['2022-01-01', '2022-01-02', '2022-01-03'],
+            'timedelta_col': ['1 days', '2 days', '3 days'],
+            'category_col': ['A', 'B', 'C']
+        }
+        df = pd.DataFrame(data)
+
+        # Define the dtype_mapping
+        dtype_mapping = {
+            'int_col': InferedDataType.INT8,
+            'float_col': InferedDataType.FLOAT32,
+            'bool_col': InferedDataType.BOOLEAN,
+            'datetime_col': InferedDataType.DATETIME64,
+            'timedelta_col': InferedDataType.TIMEDELTA64,
+            'category_col': InferedDataType.CATEGORY
+        }
+
+        result = conversion_engine.convert_data_types(df, dtype_mapping)
+
+        # Check if the returned DataFrame is correctly converted
+        self.assertTrue(str(result['int_col'].dtype) == dtype_mapping['int_col'])
+        self.assertTrue(str(result['float_col'].dtype) == dtype_mapping['float_col'])
+        self.assertTrue(str(result['bool_col'].dtype) == dtype_mapping['bool_col'])
+        self.assertTrue(str(result['datetime_col'].dtype) == dtype_mapping['datetime_col'])
+        self.assertTrue(str(result['timedelta_col'].dtype) == dtype_mapping['timedelta_col'])
+        self.assertTrue(str(result['category_col'].dtype) == dtype_mapping['category_col'])
 
 if __name__ == '__main__':
     unittest.main()
