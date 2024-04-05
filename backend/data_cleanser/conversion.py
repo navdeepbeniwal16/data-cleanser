@@ -377,22 +377,25 @@ def convert_data_types(df, dtype_mapping):
     Returns:
     - pd.DataFrame: DataFrame with specified columns converted to specified data types.
     """
-    # test_dict = { 'name' : 'navdeep', 'age' : 26}
-    # test_dict.keys
+
     df_copy = df.copy() # Create a copy of the DataFrame to avoid modifying the original
     
-    for col_name in dtype_mapping.keys():   
+    for col_name in dtype_mapping.keys():
+        print("Col name to convert:", col_name)   
         type_to_cast = dtype_mapping[col_name]
-        _is_valid_data_type(type_to_cast)
-        
+        print("Tyoe to cast to:", type_to_cast) 
+        # _is_valid_data_type(type_to_cast)
+
+        if type_to_cast == InferedDataType.OBJECT:
+            pass
         if type_to_cast in [InferedDataType.INT8, InferedDataType.INT16, InferedDataType.INT32, InferedDataType.INT64, InferedDataType.FLOAT32, InferedDataType.FLOAT64]:
-            df_copy = convert_column_to_numeric(df_copy, col_name, type_to_cast)
+            df_copy = convert_column_to_numeric(df_copy, col_name, type_to_cast, errors='coerce')
         elif type_to_cast == InferedDataType.BOOLEAN:
-            df_copy = convert_column_to_boolean(df_copy, col_name)
+            df_copy = convert_column_to_boolean(df_copy, col_name, errors='coerce')
         elif type_to_cast == InferedDataType.DATETIME64:
-            df_copy = convert_column_to_datetime(df_copy, col_name)
+            df_copy = convert_column_to_datetime(df_copy, col_name, errors='coerce')
         elif type_to_cast == InferedDataType.TIMEDELTA64:
-            df_copy = convert_column_to_timedelta(df_copy, col_name)
+            df_copy = convert_column_to_timedelta(df_copy, col_name, errors='coerce')
         elif type_to_cast == InferedDataType.CATEGORY:
             df_copy = convert_column_to_category(df_copy, col_name)
         else:
