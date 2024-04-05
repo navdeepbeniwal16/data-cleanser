@@ -375,5 +375,165 @@ class TestConvertColumnToNumeric(unittest.TestCase):
         print(result)
         self.assertTrue(result[column_name].dtype == InferedDataType.FLOAT64)
 
+class TestConvertColumnToTimedelta(unittest.TestCase):
+    column_name = 'col'
+
+    def test_convert_column_to_timedelta_default(self):
+        data = {self.column_name: ['1 days', '2 days', '3 days', '4 days', '5 days']}
+        df = pd.DataFrame(data)
+        result = conversion_engine.convert_column_to_timedelta(df, self.column_name)
+        self.assertTrue(result[self.column_name].dtype == InferedDataType.TIMEDELTA64)
+        self.assertTrue(result[self.column_name][0] == pd.Timedelta(days=1))
+
+    def test_convert_column_to_timedelta_hh_mm_ss(self):
+        data = {self.column_name: ['01:02:03']}
+        df = pd.DataFrame(data)
+        result = conversion_engine.convert_column_to_timedelta(df, self.column_name)
+        self.assertTrue(result[self.column_name].dtype == InferedDataType.TIMEDELTA64)
+        self.assertTrue(result[self.column_name][0] == pd.Timedelta(hours=1, minutes=2, seconds=3))
+
+    def test_convert_column_to_timedelta_hh_mm_ss_sss(self):
+        data = {self.column_name: ['01:02:03.456']}
+        df = pd.DataFrame(data)
+        result = conversion_engine.convert_column_to_timedelta(df, self.column_name)
+        self.assertTrue(result[self.column_name].dtype == InferedDataType.TIMEDELTA64)
+        self.assertTrue(result[self.column_name][0] == pd.Timedelta(hours=1, minutes=2, seconds=3, milliseconds=456))
+
+    def test_convert_column_to_timedelta_dd_days_hh_mm_ss(self):
+        data = {self.column_name: ['5 days 01:02:03']}
+        df = pd.DataFrame(data)
+        result = conversion_engine.convert_column_to_timedelta(df, self.column_name)
+        self.assertTrue(result[self.column_name].dtype == InferedDataType.TIMEDELTA64)
+        self.assertTrue(result[self.column_name][0] == pd.Timedelta(days=5, hours=1, minutes=2, seconds=3))
+
+    def test_convert_column_to_timedelta_dd_days_hh_mm_ss_sss(self):
+        data = {'col': ['5 days 01:02:03.456']}
+        df = pd.DataFrame(data)
+        result = conversion_engine.convert_column_to_timedelta(df, 'col')
+        self.assertTrue(result['col'].dtype == 'timedelta64[ns]')
+        self.assertTrue(result['col'].iloc[0] == pd.Timedelta(days=5, hours=1, minutes=2, seconds=3, milliseconds=456))
+
+    def test_convert_column_to_timedelta_dd_hh_mm_ss(self):
+        data = {'col': ['5:01:02:03']}
+        df = pd.DataFrame(data)
+        result = conversion_engine.convert_column_to_timedelta(df, 'col')
+        self.assertTrue(result['col'].dtype == 'timedelta64[ns]')
+        print("Data", result)
+        self.assertTrue(result['col'][0] == pd.Timedelta(days=5, hours=1, minutes=2, seconds=3))
+
+    def test_convert_column_to_timedelta_dd_hh_mm_ss_sss(self):
+        data = {'col': ['5:01:02:03.456']}
+        df = pd.DataFrame(data)
+        result = conversion_engine.convert_column_to_timedelta(df, 'col')
+        self.assertTrue(result['col'].dtype == 'timedelta64[ns]')
+        self.assertTrue(result['col'].iloc[0] == pd.Timedelta(days=5, hours=1, minutes=2, seconds=3, milliseconds=456))
+
+    def test_convert_column_to_timedelta_dd_hh_mm_ss_comma_sss(self):
+        data = {'col': ['5:01:02:03,456']}
+        df = pd.DataFrame(data)
+        result = conversion_engine.convert_column_to_timedelta(df, 'col')
+        self.assertTrue(result['col'].dtype == 'timedelta64[ns]')
+        self.assertTrue(result['col'].iloc[0] == pd.Timedelta(days=5, hours=1, minutes=2, seconds=3, milliseconds=456))
+
+    def test_convert_column_to_timedelta_DD_days(self):
+        column_name = 'col'
+        data = {column_name: ['5 days', '10 days', '15 days']}
+        df = pd.DataFrame(data)
+        result = conversion_engine.convert_column_to_timedelta(df, column_name)
+        self.assertTrue(result[column_name].dtype == InferedDataType.TIMEDELTA64)
+
+    def test_convert_column_to_timedelta_HH_MM(self):
+        column_name = 'col'
+        data = {column_name: ['01:02', '10:12', '15:23']}
+        df = pd.DataFrame(data)
+        result = conversion_engine.convert_column_to_timedelta(df, column_name)
+        self.assertTrue(result[column_name].dtype == InferedDataType.TIMEDELTA64)
+
+    def test_convert_column_to_timedelta_HH_MM_SS_AM_PM(self):
+        column_name = 'col'
+        data = {column_name: ['01:02:03 AM', '10:12:23 PM', '12:59:59 AM']}
+        df = pd.DataFrame(data)
+        result = conversion_engine.convert_column_to_timedelta(df, column_name)
+        self.assertTrue(result[column_name].dtype == InferedDataType.TIMEDELTA64)
+
+    def test_convert_column_to_timedelta_HH_MM_AM_PM(self):
+        column_name = 'col'
+        data = {column_name: ['01:02 AM', '10:12 PM', '12:59 AM']}
+        df = pd.DataFrame(data)
+        result = conversion_engine.convert_column_to_timedelta(df, column_name)
+        self.assertTrue(result[column_name].dtype == InferedDataType.TIMEDELTA64)
+
+    def test_convert_column_to_timedelta_HH_hours_MM_minutes_SS_seconds(self):
+        column_name = 'col'
+        data = {column_name: ['1 hours 2 minutes 3 seconds', '5 hours 10 minutes 15 seconds', '10 hours 30 minutes 45 seconds']}
+        df = pd.DataFrame(data)
+        result = conversion_engine.convert_column_to_timedelta(df, column_name)
+        self.assertTrue(result[column_name].dtype == InferedDataType.TIMEDELTA64)
+
+    def test_convert_column_to_timedelta_HH_hours_MM_minutes_SS_SSS_seconds(self):
+        column_name = 'col'
+        data = {column_name: ['1 hours 2 minutes 3.456 seconds', '5 hours 10 minutes 15.789 seconds', '10 hours 30 minutes 45.123 seconds']}
+        df = pd.DataFrame(data)
+        result = conversion_engine.convert_column_to_timedelta(df, column_name)
+        self.assertTrue(result[column_name].dtype == InferedDataType.TIMEDELTA64)
+
+    def test_convert_column_to_timedelta_MM_minutes_SS_seconds(self):
+        column_name = 'col'
+        data = {column_name: ['2 minutes 3 seconds', '10 minutes 15 seconds', '30 minutes 45 seconds']}
+        df = pd.DataFrame(data)
+        result = conversion_engine.convert_column_to_timedelta(df, column_name)
+        self.assertTrue(result[column_name].dtype == InferedDataType.TIMEDELTA64)
+
+    def test_convert_column_to_timedelta_MM_minutes_SS_SSS_seconds(self):
+        column_name = 'col'
+        data = {column_name: ['2 minutes 3.456 seconds', '10 minutes 15.789 seconds', '30 minutes 45.123 seconds']}
+        df = pd.DataFrame(data)
+        result = conversion_engine.convert_column_to_timedelta(df, column_name)
+        self.assertTrue(result[column_name].dtype == InferedDataType.TIMEDELTA64)
+
+    def test_convert_column_to_timedelta_SS_seconds(self):
+        column_name = 'col'
+        data = {column_name: ['3 seconds', '15 seconds', '45 seconds']}
+        df = pd.DataFrame(data)
+        result = conversion_engine.convert_column_to_timedelta(df, column_name)
+        self.assertTrue(result[column_name].dtype == InferedDataType.TIMEDELTA64)
+
+    def test_convert_column_to_timedelta_SS_SSS_seconds(self):
+        column_name = 'col'
+        data = {column_name: ['3.456 seconds', '15.789 seconds', '45.123 seconds']}
+        df = pd.DataFrame(data)
+        result = conversion_engine.convert_column_to_timedelta(df, column_name)
+        self.assertTrue(result[column_name].dtype == InferedDataType.TIMEDELTA64)
+
+    def test_convert_column_to_timedelta_with_invalid_values_raise_errors(self):
+        column_name = 'col'
+        data = {column_name: ['1 days', '2 days', '3 days', '4 days', '5 days', 'invalid']}
+        df = pd.DataFrame(data)
+        with self.assertRaises(ValueError):
+            conversion_engine.convert_column_to_timedelta(df, 'col', errors='raise')
+
+    # TODO - Working on this...
+    def test_convert_column_to_timedelta_with_invalid_values_coerce_errors(self):
+        column_name = 'col'
+        data = {column_name: ['1 days', '2 days', '3 days', '4 days', '5 days', 'invalid']}
+        df = pd.DataFrame(data)
+        result = conversion_engine.convert_column_to_timedelta(df, 'col', errors='coerce')
+        self.assertTrue(result[column_name].dtype == InferedDataType.TIMEDELTA64)
+
+    # def test_convert_column_to_timedelta_coerce_errors(self):
+    #     result = conversion_engine.convert_column_to_timedelta(self.df, 'col', errors='coerce')
+    #     self.assertTrue(result['col'].dtype == 'timedelta64[ns]')
+    #     self.assertTrue(pd.isna(result['col'].iloc[0]))
+
+    # def test_convert_column_to_timedelta_default_missing_values(self):
+    #     result = conversion_engine.convert_column_to_timedelta(self.df, 'col', missing_values='default')
+    #     self.assertTrue(result['col'].dtype == 'timedelta64[ns]')
+    #     self.assertTrue(result['col'].iloc[0] == pd.Timedelta(0))
+
+    # def test_convert_column_to_timedelta_delete_missing_values(self):
+    #     result = conversion_engine.convert_column_to_timedelta(self.df, 'col', missing_values='delete')
+    #     self.assertTrue(result['col'].dtype == 'timedelta64[ns]')
+    #     self.assertTrue(len(result['col']) == 5)
+
 if __name__ == '__main__':
     unittest.main()
