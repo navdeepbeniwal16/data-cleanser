@@ -20,15 +20,19 @@ def _dataframe_has_column(df, column):
     if column not in df:
         raise KeyError(f'Column "{column}" does not exist in the DataFrame')
     
+def _is_valid_data_type(type):
+    type_options = InferedDataType.__dict__.values()
+    if type not in type_options:
+        raise KeyError(f'Invalid data type provided i.e. {type}. Please provide one of {type_options}')
 
 def _is_valid_error_handling_option(option):
-    error_options = _ERROR_HANDLING_OPTIONS.__dict__.values()
+    error_options = [_ERROR_HANDLING_OPTIONS.IGNORE, _ERROR_HANDLING_OPTIONS.RAISE, _ERROR_HANDLING_OPTIONS.COERCE]
     if option not in error_options:
-        raise KeyError(f'Invalid argument for \'errors\'. Please provide one of {error_options}')
+        raise KeyError(f'Invalid argument \'{option}\' for \'errors\'. Please provide one of {error_options}')
     
 
 def _is_valid_missing_value_option(option):
-    missing_value_options = _MISSING_VALUE_OPTIONS.__dict__.values()
+    missing_value_options = [_MISSING_VALUE_OPTIONS.IGNORE, _MISSING_VALUE_OPTIONS.DEFAULT, _MISSING_VALUE_OPTIONS.DELETE]
     if option not in missing_value_options:
         raise KeyError(f'Invalid argument for \'missing_values\'. Please provide one of {missing_value_options}')
     
@@ -373,8 +377,28 @@ def convert_data_types(df, dtype_mapping):
     Returns:
     - pd.DataFrame: DataFrame with specified columns converted to specified data types.
     """
-    # Your implementation here
-    pass
+    # test_dict = { 'name' : 'navdeep', 'age' : 26}
+    # test_dict.keys
+    df_copy = df.copy() # Create a copy of the DataFrame to avoid modifying the original
+    
+    for col_name in dtype_mapping.keys():   
+        type_to_cast = dtype_mapping[col_name]
+        _is_valid_data_type(type_to_cast)
+        
+        if type_to_cast in [InferedDataType.INT8, InferedDataType.INT16, InferedDataType.INT32, InferedDataType.INT64, InferedDataType.FLOAT32, InferedDataType.FLOAT64]:
+            df_copy = convert_column_to_numeric(df_copy, col_name, type_to_cast)
+        elif type_to_cast == InferedDataType.BOOLEAN:
+            df_copy = convert_column_to_boolean(df_copy, col_name)
+        elif type_to_cast == InferedDataType.DATETIME64:
+            df_copy = convert_column_to_datetime(df_copy, col_name)
+        elif type_to_cast == InferedDataType.TIMEDELTA64:
+            df_copy = convert_column_to_timedelta(df_copy, col_name)
+        elif type_to_cast == InferedDataType.CATEGORY:
+            df_copy = convert_column_to_category(df_copy, col_name)
+        else:
+            pass
+    
+    return df_copy
 
 
 def infer_and_convert_data_types(df):
