@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 import re
-from .data_types import DataTypes
+from .data_types import DataTypes, get_numeric_types
 
 class _ERROR_HANDLING_OPTIONS:
     IGNORE = 'ignore'
@@ -109,7 +109,7 @@ def convert_column_to_numeric(df, column, numeric_type='float64', errors='raise'
     """
 
     # Check if the numeric type passed is valid or supported
-    supported_numeric_types = [DataTypes.INT8, DataTypes.INT16, DataTypes.INT32, DataTypes.INT64, DataTypes.FLOAT32, DataTypes.FLOAT64]
+    supported_numeric_types = get_numeric_types()
     if numeric_type not in supported_numeric_types:
         raise KeyError(f'Numeric type "{numeric_type}" is not valid. Please provider one of "{[nt for nt in supported_numeric_types]}"')
 
@@ -383,7 +383,7 @@ def convert_col_date_type(df, column, type_to_cast, errors='coerce', missing_val
     
     if type_to_cast == DataTypes.OBJECT:
         pass
-    if type_to_cast in [DataTypes.INT8, DataTypes.INT16, DataTypes.INT32, DataTypes.INT64, DataTypes.FLOAT32, DataTypes.FLOAT64]:
+    if type_to_cast in get_numeric_types():
         df = convert_column_to_numeric(df, column, type_to_cast, errors, missing_values, default_value)
     elif type_to_cast == DataTypes.BOOLEAN:
         df = convert_column_to_boolean(df, column, errors, missing_values, default_value)

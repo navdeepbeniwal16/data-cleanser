@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 import re
 
-from .data_types import DataTypes
+from .data_types import DataTypes, get_numeric_types
 
 MAX_INTEGER_CHECKABLE_FLOAT = 2.0 ** 53 # Max integer value that can be checked appropriately via is_integer()
 INFERENCE_THRESHOLD_PERCENTAGE = 0.5 # Threshold percentage of valid values in a data column to accurately infer the type
@@ -174,7 +174,7 @@ def infer_data_type(data_column):
 
     # Inferring numeric data type
     inferred_data_type = infer_numeric_type(data_column)
-    if inferred_data_type in [DataTypes.FLOAT32, DataTypes.FLOAT64, DataTypes.INT8, DataTypes.INT16, DataTypes.INT32, DataTypes.INT64]:
+    if inferred_data_type in get_numeric_types():
         # Checking for boolean (0, 1) numerics
         if is_boolean_type(data_column):
             return DataTypes.BOOLEAN
