@@ -2,8 +2,10 @@ import unittest
 import pandas as pd
 import numpy as np
 import pytest
-from data_cleanser import conversion as conversion_engine
+from data_cleanser.conversion import Convertor
 from data_cleanser.data_types import DataTypes
+
+conversion_engine = Convertor()
 
 """
 Testing conversion to datetime data type
