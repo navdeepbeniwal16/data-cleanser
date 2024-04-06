@@ -8,12 +8,15 @@ from .serializers import DataFileSerializer
 import pandas as pd
 from pandas.errors import ParserError
 import os
+import redis
 
 import sys
 sys.path.append('../') 
 from data_cleanser import inference as inference_engine, conversion as conversion_engine
 
 logger = logging.getLogger("django")
+r = redis.Redis()
+
 
 # Create your views here.
 @api_view(['GET'])
@@ -25,6 +28,7 @@ class DataFileUploadAPIView(APIView):
     serializer_class = DataFileSerializer
 
     def post(self, request):
+        
         logger.debug('DataFileUploadAPIView : post : Beginning of method')
         
         file_data_serializer = self.serializer_class(data=request.data)
