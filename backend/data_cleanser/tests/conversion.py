@@ -2,8 +2,10 @@ import unittest
 import pandas as pd
 import numpy as np
 import pytest
-from data_cleanser import conversion as conversion_engine
-from data_cleanser.inference import InferedDataType
+from data_cleanser.conversion import Convertor
+from data_cleanser.data_types import DataTypes
+
+conversion_engine = Convertor()
 
 """
 Testing conversion to datetime data type
@@ -136,7 +138,7 @@ def test_convert_column_to_boolean_values_strings():
     df = pd.DataFrame({column_name: ['True', 'False', 'True', 'False']})
     assert df[column_name].dtype == 'object'
     result = conversion_engine.convert_column_to_boolean(df, column_name)
-    assert result[column_name].dtype == InferedDataType.BOOLEAN
+    assert result[column_name].dtype == DataTypes.BOOLEAN
 
 def test_convert_column_to_boolean_non_existing_column():
     # Test converting a non-existing column
@@ -267,7 +269,7 @@ class TestConvertColumnToNumeric(unittest.TestCase):
         data = {column_name: [-100, 0, 100, 127, -128]}
         df = pd.DataFrame(data)
         result = conversion_engine.convert_column_to_numeric(df, column_name, numeric_type='int8')
-        self.assertTrue(result[column_name].dtype == InferedDataType.INT8)
+        self.assertTrue(result[column_name].dtype == DataTypes.INT8)
 
     def test_convert_column_to_numeric_int16(self):
         # Tests conversion to int16
@@ -275,7 +277,7 @@ class TestConvertColumnToNumeric(unittest.TestCase):
         data = {column_name: [-10000, 0, 10000, 32767, -32768]}
         df = pd.DataFrame(data)
         result = conversion_engine.convert_column_to_numeric(df, column_name, numeric_type='int16')
-        self.assertTrue(result[column_name].dtype == InferedDataType.INT16)
+        self.assertTrue(result[column_name].dtype == DataTypes.INT16)
 
     def test_convert_column_to_numeric_int32(self):
         # Tests conversion to int32
@@ -283,7 +285,7 @@ class TestConvertColumnToNumeric(unittest.TestCase):
         data = {column_name: [-2147483648, 0, 2147483647]}
         df = pd.DataFrame(data)
         result = conversion_engine.convert_column_to_numeric(df, column_name, numeric_type='int32')
-        self.assertTrue(result[column_name].dtype == InferedDataType.INT32)
+        self.assertTrue(result[column_name].dtype == DataTypes.INT32)
 
     def test_convert_column_to_numeric_int64(self):
         # Tests conversion to int64
@@ -291,7 +293,7 @@ class TestConvertColumnToNumeric(unittest.TestCase):
         data = {column_name: [-9223372036854775808, 0, 9223372036854775807]}
         df = pd.DataFrame(data)
         result = conversion_engine.convert_column_to_numeric(df, column_name, numeric_type='int64')
-        self.assertTrue(result[column_name].dtype == InferedDataType.INT64)
+        self.assertTrue(result[column_name].dtype == DataTypes.INT64)
 
     def test_convert_column_to_numeric_float32(self):
         # Tests conversion to float32
@@ -299,7 +301,7 @@ class TestConvertColumnToNumeric(unittest.TestCase):
         data = {column_name: [3.402823466e+38, 0, -3.402823466e+38]}
         df = pd.DataFrame(data)
         result = conversion_engine.convert_column_to_numeric(df, column_name, numeric_type='float32')
-        self.assertTrue(result[column_name].dtype == InferedDataType.FLOAT32)
+        self.assertTrue(result[column_name].dtype == DataTypes.FLOAT32)
 
     def test_convert_column_to_numeric_float64(self):
         #  Tests conversion to float64
@@ -307,7 +309,7 @@ class TestConvertColumnToNumeric(unittest.TestCase):
         data = {column_name: [1.7976931348623157e+308, 0, -1.7976931348623157e+308]}
         df = pd.DataFrame(data)
         result = conversion_engine.convert_column_to_numeric(df, column_name, numeric_type='float64')
-        self.assertTrue(result[column_name].dtype == InferedDataType.FLOAT64)
+        self.assertTrue(result[column_name].dtype == DataTypes.FLOAT64)
 
     def test_convert_column_to_numeric_valid_mixed_data_types(self):
         # Tests handling of valid mixed data types
@@ -315,7 +317,7 @@ class TestConvertColumnToNumeric(unittest.TestCase):
         data = {column_name: [1, 2.5, '3', True]}
         df = pd.DataFrame(data)
         result = conversion_engine.convert_column_to_numeric(df, column_name, numeric_type='float64')
-        self.assertTrue(result[column_name].dtype == InferedDataType.FLOAT64)
+        self.assertTrue(result[column_name].dtype == DataTypes.FLOAT64)
 
     # Handling invalid numeric values
     def test_convert_column_to_numeric_mixed_data_types_raise_errors(self):
@@ -332,7 +334,7 @@ class TestConvertColumnToNumeric(unittest.TestCase):
         data = {column_name: [1, 2.5, '3', 'abc', True]}
         df = pd.DataFrame(data)
         result = conversion_engine.convert_column_to_numeric(df, column_name, numeric_type='float64', errors='coerce', missing_values='ignore')
-        self.assertTrue(result[column_name].dtype == InferedDataType.FLOAT64)
+        self.assertTrue(result[column_name].dtype == DataTypes.FLOAT64)
         self.assertTrue(result[column_name].isna().sum() == 1)
 
     # Handling missing values
@@ -342,7 +344,7 @@ class TestConvertColumnToNumeric(unittest.TestCase):
         data = {column_name: [1, 2.5, 3.9, np.nan, None]}
         df = pd.DataFrame(data)
         result = conversion_engine.convert_column_to_numeric(df, column_name, numeric_type='float64', errors='raise', missing_values='ignore')
-        self.assertTrue(result[column_name].dtype == InferedDataType.FLOAT64)
+        self.assertTrue(result[column_name].dtype == DataTypes.FLOAT64)
         print("Data:", result[column_name])
         self.assertTrue(pd.isna(result[column_name][3])) 
         self.assertTrue(pd.isna(result[column_name][4]))
@@ -353,7 +355,7 @@ class TestConvertColumnToNumeric(unittest.TestCase):
         data = {column_name: [1, 2.5, 3.9, np.nan, None]}
         df = pd.DataFrame(data)
         result = conversion_engine.convert_column_to_numeric(df, column_name, numeric_type='float64', errors='raise', missing_values='default', default_value=-1)
-        self.assertTrue(result[column_name].dtype == InferedDataType.FLOAT64)
+        self.assertTrue(result[column_name].dtype == DataTypes.FLOAT64)
         self.assertTrue(result[column_name][3] == -1) 
         self.assertTrue(result[column_name][4] == -1) 
 
@@ -363,7 +365,7 @@ class TestConvertColumnToNumeric(unittest.TestCase):
         data = {column_name: [1, 2.5, 3.9, np.nan, None]}
         df = pd.DataFrame(data)
         result = conversion_engine.convert_column_to_numeric(df, column_name, numeric_type='float64', errors='raise', missing_values='delete')
-        self.assertTrue(result[column_name].dtype == InferedDataType.FLOAT64)
+        self.assertTrue(result[column_name].dtype == DataTypes.FLOAT64)
         self.assertTrue(len(result[column_name]) == 3) # missing values should be deleted
 
     def test_convert_column_to_numeric_non_standard_numeric_formats(self):
@@ -373,7 +375,7 @@ class TestConvertColumnToNumeric(unittest.TestCase):
         df = pd.DataFrame(data)
         result = conversion_engine.convert_column_to_numeric(df, column_name, numeric_type='float64')
         print(result)
-        self.assertTrue(result[column_name].dtype == InferedDataType.FLOAT64)
+        self.assertTrue(result[column_name].dtype == DataTypes.FLOAT64)
 
 class TestConvertColumnToTimedelta(unittest.TestCase):
     column_name = 'col'
@@ -382,28 +384,28 @@ class TestConvertColumnToTimedelta(unittest.TestCase):
         data = {self.column_name: ['1 days', '2 days', '3 days', '4 days', '5 days']}
         df = pd.DataFrame(data)
         result = conversion_engine.convert_column_to_timedelta(df, self.column_name)
-        self.assertTrue(result[self.column_name].dtype == InferedDataType.TIMEDELTA64)
+        self.assertTrue(result[self.column_name].dtype == DataTypes.TIMEDELTA64)
         self.assertTrue(result[self.column_name][0] == pd.Timedelta(days=1))
 
     def test_convert_column_to_timedelta_hh_mm_ss(self):
         data = {self.column_name: ['01:02:03']}
         df = pd.DataFrame(data)
         result = conversion_engine.convert_column_to_timedelta(df, self.column_name)
-        self.assertTrue(result[self.column_name].dtype == InferedDataType.TIMEDELTA64)
+        self.assertTrue(result[self.column_name].dtype == DataTypes.TIMEDELTA64)
         self.assertTrue(result[self.column_name][0] == pd.Timedelta(hours=1, minutes=2, seconds=3))
 
     def test_convert_column_to_timedelta_hh_mm_ss_sss(self):
         data = {self.column_name: ['01:02:03.456']}
         df = pd.DataFrame(data)
         result = conversion_engine.convert_column_to_timedelta(df, self.column_name)
-        self.assertTrue(result[self.column_name].dtype == InferedDataType.TIMEDELTA64)
+        self.assertTrue(result[self.column_name].dtype == DataTypes.TIMEDELTA64)
         self.assertTrue(result[self.column_name][0] == pd.Timedelta(hours=1, minutes=2, seconds=3, milliseconds=456))
 
     def test_convert_column_to_timedelta_dd_days_hh_mm_ss(self):
         data = {self.column_name: ['5 days 01:02:03']}
         df = pd.DataFrame(data)
         result = conversion_engine.convert_column_to_timedelta(df, self.column_name)
-        self.assertTrue(result[self.column_name].dtype == InferedDataType.TIMEDELTA64)
+        self.assertTrue(result[self.column_name].dtype == DataTypes.TIMEDELTA64)
         self.assertTrue(result[self.column_name][0] == pd.Timedelta(days=5, hours=1, minutes=2, seconds=3))
 
     def test_convert_column_to_timedelta_dd_days_hh_mm_ss_sss(self):
@@ -440,70 +442,70 @@ class TestConvertColumnToTimedelta(unittest.TestCase):
         data = {column_name: ['5 days', '10 days', '15 days']}
         df = pd.DataFrame(data)
         result = conversion_engine.convert_column_to_timedelta(df, column_name)
-        self.assertTrue(result[column_name].dtype == InferedDataType.TIMEDELTA64)
+        self.assertTrue(result[column_name].dtype == DataTypes.TIMEDELTA64)
 
     def test_convert_column_to_timedelta_HH_MM(self):
         column_name = 'col'
         data = {column_name: ['01:02', '10:12', '15:23']}
         df = pd.DataFrame(data)
         result = conversion_engine.convert_column_to_timedelta(df, column_name)
-        self.assertTrue(result[column_name].dtype == InferedDataType.TIMEDELTA64)
+        self.assertTrue(result[column_name].dtype == DataTypes.TIMEDELTA64)
 
     def test_convert_column_to_timedelta_HH_MM_SS_AM_PM(self):
         column_name = 'col'
         data = {column_name: ['01:02:03 AM', '10:12:23 PM', '12:59:59 AM']}
         df = pd.DataFrame(data)
         result = conversion_engine.convert_column_to_timedelta(df, column_name)
-        self.assertTrue(result[column_name].dtype == InferedDataType.TIMEDELTA64)
+        self.assertTrue(result[column_name].dtype == DataTypes.TIMEDELTA64)
 
     def test_convert_column_to_timedelta_HH_MM_AM_PM(self):
         column_name = 'col'
         data = {column_name: ['01:02 AM', '10:12 PM', '12:59 AM']}
         df = pd.DataFrame(data)
         result = conversion_engine.convert_column_to_timedelta(df, column_name)
-        self.assertTrue(result[column_name].dtype == InferedDataType.TIMEDELTA64)
+        self.assertTrue(result[column_name].dtype == DataTypes.TIMEDELTA64)
 
     def test_convert_column_to_timedelta_HH_hours_MM_minutes_SS_seconds(self):
         column_name = 'col'
         data = {column_name: ['1 hours 2 minutes 3 seconds', '5 hours 10 minutes 15 seconds', '10 hours 30 minutes 45 seconds']}
         df = pd.DataFrame(data)
         result = conversion_engine.convert_column_to_timedelta(df, column_name)
-        self.assertTrue(result[column_name].dtype == InferedDataType.TIMEDELTA64)
+        self.assertTrue(result[column_name].dtype == DataTypes.TIMEDELTA64)
 
     def test_convert_column_to_timedelta_HH_hours_MM_minutes_SS_SSS_seconds(self):
         column_name = 'col'
         data = {column_name: ['1 hours 2 minutes 3.456 seconds', '5 hours 10 minutes 15.789 seconds', '10 hours 30 minutes 45.123 seconds']}
         df = pd.DataFrame(data)
         result = conversion_engine.convert_column_to_timedelta(df, column_name)
-        self.assertTrue(result[column_name].dtype == InferedDataType.TIMEDELTA64)
+        self.assertTrue(result[column_name].dtype == DataTypes.TIMEDELTA64)
 
     def test_convert_column_to_timedelta_MM_minutes_SS_seconds(self):
         column_name = 'col'
         data = {column_name: ['2 minutes 3 seconds', '10 minutes 15 seconds', '30 minutes 45 seconds']}
         df = pd.DataFrame(data)
         result = conversion_engine.convert_column_to_timedelta(df, column_name)
-        self.assertTrue(result[column_name].dtype == InferedDataType.TIMEDELTA64)
+        self.assertTrue(result[column_name].dtype == DataTypes.TIMEDELTA64)
 
     def test_convert_column_to_timedelta_MM_minutes_SS_SSS_seconds(self):
         column_name = 'col'
         data = {column_name: ['2 minutes 3.456 seconds', '10 minutes 15.789 seconds', '30 minutes 45.123 seconds']}
         df = pd.DataFrame(data)
         result = conversion_engine.convert_column_to_timedelta(df, column_name)
-        self.assertTrue(result[column_name].dtype == InferedDataType.TIMEDELTA64)
+        self.assertTrue(result[column_name].dtype == DataTypes.TIMEDELTA64)
 
     def test_convert_column_to_timedelta_SS_seconds(self):
         column_name = 'col'
         data = {column_name: ['3 seconds', '15 seconds', '45 seconds']}
         df = pd.DataFrame(data)
         result = conversion_engine.convert_column_to_timedelta(df, column_name)
-        self.assertTrue(result[column_name].dtype == InferedDataType.TIMEDELTA64)
+        self.assertTrue(result[column_name].dtype == DataTypes.TIMEDELTA64)
 
     def test_convert_column_to_timedelta_SS_SSS_seconds(self):
         column_name = 'col'
         data = {column_name: ['3.456 seconds', '15.789 seconds', '45.123 seconds']}
         df = pd.DataFrame(data)
         result = conversion_engine.convert_column_to_timedelta(df, column_name)
-        self.assertTrue(result[column_name].dtype == InferedDataType.TIMEDELTA64)
+        self.assertTrue(result[column_name].dtype == DataTypes.TIMEDELTA64)
 
     def test_convert_column_to_timedelta_with_invalid_values_raise_errors(self):
         column_name = 'col'
@@ -518,7 +520,7 @@ class TestConvertColumnToTimedelta(unittest.TestCase):
         data = {column_name: ['1 days', '2 days', '3 days', '4 days', '5 days', 'invalid']}
         df = pd.DataFrame(data)
         result = conversion_engine.convert_column_to_timedelta(df, 'col', errors='coerce')
-        self.assertTrue(result[column_name].dtype == InferedDataType.TIMEDELTA64)
+        self.assertTrue(result[column_name].dtype == DataTypes.TIMEDELTA64)
 
     # def test_convert_column_to_timedelta_coerce_errors(self):
     #     result = conversion_engine.convert_column_to_timedelta(self.df, 'col', errors='coerce')
@@ -550,12 +552,12 @@ class TestConvertDataTypes(unittest.TestCase):
 
         # Define the dtype_mapping
         dtype_mapping = {
-            'int_col': InferedDataType.INT8,
-            'float_col': InferedDataType.FLOAT32,
-            'bool_col': InferedDataType.BOOLEAN,
-            'datetime_col': InferedDataType.DATETIME64,
-            'timedelta_col': InferedDataType.TIMEDELTA64,
-            'category_col': InferedDataType.CATEGORY
+            'int_col': DataTypes.INT8,
+            'float_col': DataTypes.FLOAT32,
+            'bool_col': DataTypes.BOOLEAN,
+            'datetime_col': DataTypes.DATETIME64,
+            'timedelta_col': DataTypes.TIMEDELTA64,
+            'category_col': DataTypes.CATEGORY
         }
 
         result = conversion_engine.convert_data_types(df, dtype_mapping)
