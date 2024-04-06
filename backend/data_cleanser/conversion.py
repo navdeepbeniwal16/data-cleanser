@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 import re
-from .inference import InferedDataType
+from .data_types import DataTypes
 
 class _ERROR_HANDLING_OPTIONS:
     IGNORE = 'ignore'
@@ -21,7 +21,7 @@ def _dataframe_has_column(df, column):
         raise KeyError(f'Column "{column}" does not exist in the DataFrame')
     
 def _is_valid_data_type(type):
-    type_options = InferedDataType.__dict__.values()
+    type_options = DataTypes.__dict__.values()
     if type not in type_options:
         raise KeyError(f'Invalid data type provided i.e. {type}. Please provide one of {type_options}')
 
@@ -109,7 +109,7 @@ def convert_column_to_numeric(df, column, numeric_type='float64', errors='raise'
     """
 
     # Check if the numeric type passed is valid or supported
-    supported_numeric_types = [InferedDataType.INT8, InferedDataType.INT16, InferedDataType.INT32, InferedDataType.INT64, InferedDataType.FLOAT32, InferedDataType.FLOAT64]
+    supported_numeric_types = [DataTypes.INT8, DataTypes.INT16, DataTypes.INT32, DataTypes.INT64, DataTypes.FLOAT32, DataTypes.FLOAT64]
     if numeric_type not in supported_numeric_types:
         raise KeyError(f'Numeric type "{numeric_type}" is not valid. Please provider one of "{[nt for nt in supported_numeric_types]}"')
 
@@ -184,7 +184,7 @@ def convert_column_to_datetime(df, column, errors='raise', missing_values='ignor
             raise ValueError('Invalid value for missing_values. Use one of "ignore", "default", or "delete".')
         return df_copy
     except ValueError as e:
-        raise ValueError(f'Error converting column "{column}" to {InferedDataType.DATETIME64}: {str(e)}')
+        raise ValueError(f'Error converting column "{column}" to {DataTypes.DATETIME64}: {str(e)}')
     
 
 def convert_column_to_category(df, column, missing_values='ignore', default_value='other'):
@@ -218,7 +218,7 @@ def convert_column_to_category(df, column, missing_values='ignore', default_valu
             df_copy[column] = pd.Categorical(df_copy[column])
         return df_copy
     except ValueError as e:
-        raise ValueError(f'Error converting column "{column}" to {InferedDataType.CATEGORY}: {str(e)}')
+        raise ValueError(f'Error converting column "{column}" to {DataTypes.CATEGORY}: {str(e)}')
 
 
 def convert_column_to_boolean(df, column, errors='raise', missing_values='ignore', default_value=False):
@@ -243,7 +243,7 @@ def convert_column_to_boolean(df, column, errors='raise', missing_values='ignore
     _dataframe_has_column(df, column)
 
     # Return dataframe if the dataframe column already is of boolean type
-    if df[column].dtype == InferedDataType.BOOLEAN:
+    if df[column].dtype == DataTypes.BOOLEAN:
         return df
 
     # Convert the column to a boolean type
@@ -269,7 +269,7 @@ def convert_column_to_boolean(df, column, errors='raise', missing_values='ignore
         
         return df_copy
     except ValueError as e:
-        raise ValueError(f'Error converting column "{column}" to {InferedDataType.BOOLEAN}: {str(e)}')
+        raise ValueError(f'Error converting column "{column}" to {DataTypes.BOOLEAN}: {str(e)}')
 
 def _parse_pandas_unsupported_timedelta_format(timedelta_string):
     """
@@ -363,7 +363,7 @@ def convert_column_to_timedelta(df, column, errors='raise', missing_values='igno
             df_copy[column] = df_copy[column].map(str).map(_parse_pandas_unsupported_timedelta_format)
             return df_copy
         except ValueError:
-            raise ValueError(f'Error converting column "{column}" to {InferedDataType.TIMEDELTA64}: {str(e)}')
+            raise ValueError(f'Error converting column "{column}" to {DataTypes.TIMEDELTA64}: {str(e)}')
 
 def convert_col_date_type(df, column, type_to_cast, errors='coerce', missing_values='ignore', default_value=None):
     """
@@ -372,7 +372,7 @@ def convert_col_date_type(df, column, type_to_cast, errors='coerce', missing_val
     Args:
     - df (pd.DataFrame): Input DataFrame.
     - column (str): Name of the column to convert.
-    - type_to_cast (str): Data type to cast the column to. Should be one of the values from InferedDataType.
+    - type_to_cast (str): Data type to cast the column to. Should be one of the values from DataTypes.
     - errors (str): How to handle errors during conversion. Default is 'coerce'.
     - missing_values (str): How to handle missing values during conversion. Default is 'ignore'.
     - default_value: Default value to use for missing or erroneous values. Default is None.
@@ -381,17 +381,17 @@ def convert_col_date_type(df, column, type_to_cast, errors='coerce', missing_val
     - pd.DataFrame: DataFrame with the specified column converted to the specified data type.
     """
     
-    if type_to_cast == InferedDataType.OBJECT:
+    if type_to_cast == DataTypes.OBJECT:
         pass
-    if type_to_cast in [InferedDataType.INT8, InferedDataType.INT16, InferedDataType.INT32, InferedDataType.INT64, InferedDataType.FLOAT32, InferedDataType.FLOAT64]:
+    if type_to_cast in [DataTypes.INT8, DataTypes.INT16, DataTypes.INT32, DataTypes.INT64, DataTypes.FLOAT32, DataTypes.FLOAT64]:
         df = convert_column_to_numeric(df, column, type_to_cast, errors, missing_values, default_value)
-    elif type_to_cast == InferedDataType.BOOLEAN:
+    elif type_to_cast == DataTypes.BOOLEAN:
         df = convert_column_to_boolean(df, column, errors, missing_values, default_value)
-    elif type_to_cast == InferedDataType.DATETIME64:
+    elif type_to_cast == DataTypes.DATETIME64:
         df = convert_column_to_datetime(df, column, errors, missing_values, default_value)
-    elif type_to_cast == InferedDataType.TIMEDELTA64:
+    elif type_to_cast == DataTypes.TIMEDELTA64:
         df = convert_column_to_timedelta(df, column, errors, missing_values, default_value)
-    elif type_to_cast == InferedDataType.CATEGORY:
+    elif type_to_cast == DataTypes.CATEGORY:
         df = convert_column_to_category(df, column, missing_values, default_value)
     else:
         pass

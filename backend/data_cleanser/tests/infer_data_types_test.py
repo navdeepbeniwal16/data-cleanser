@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
-from data_cleanser.inference import infer_data_types, InferedDataType
+from data_cleanser.inference import infer_data_types
+from data_cleanser.data_types import DataTypes
 
 def test_infer_data_types():
     # Sample DataFrame using data from sample_data.csv
@@ -26,11 +27,11 @@ def test_infer_data_types():
     inferred_types = infer_data_types(df)
 
     # Assert the inferred types for each column
-    assert inferred_types['Name'] == InferedDataType.OBJECT
-    assert inferred_types['Birthdate'] == InferedDataType.DATETIME64
-    assert inferred_types['Score'] == InferedDataType.INT8
-    assert inferred_types['Grade'] == InferedDataType.CATEGORY
-    assert inferred_types['Is_Citizen'] == InferedDataType.BOOLEAN
-    assert inferred_types['Blood_Group'] == InferedDataType.CATEGORY
-    assert inferred_types['Complex'] == InferedDataType.COMPLEX
-    assert inferred_types['Object'] == InferedDataType.OBJECT
+    assert inferred_types['Name'] == DataTypes.OBJECT
+    assert inferred_types['Birthdate'] == DataTypes.DATETIME64
+    assert inferred_types['Score'] == DataTypes.INT8
+    assert inferred_types['Grade'] == DataTypes.CATEGORY
+    assert inferred_types['Is_Citizen'] == DataTypes.BOOLEAN
+    assert inferred_types['Blood_Group'] == DataTypes.CATEGORY
+    assert inferred_types['Complex'] == DataTypes.COMPLEX
+    assert inferred_types['Object'] == DataTypes.OBJECT
