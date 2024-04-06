@@ -74,6 +74,9 @@ def is_datetime_type(data_column):
             
     except (ValueError, TypeError):
         return False
+    
+def is_categorical_type(data_column):
+    return len(data_column.astype(str).unique()) / len(data_column) < 0.5
 
 """
 Function to infer numeric types i.e (int64, int32,int16, int8, float64, float32)
@@ -145,9 +148,6 @@ def is_boolean_type(data_column):
 
     return boolean_count / len(data_column) > INFERENCE_THRESHOLD_PERCENTAGE
 
-def is_categorical_type(data_column):
-    return len(data_column.unique()) / len(data_column) < 0.5
-
 def is_complex_type(data_column):
     complex_data_formats = [
         r'([-+]?\d*\.?\d+)\s*([-+])\s*(\d*\.?\d+)j',
@@ -178,6 +178,10 @@ def infer_data_type(data_column):
         # Checking for boolean (0, 1) numerics
         if is_boolean_type(data_column):
             return DataTypes.BOOLEAN
+        
+        # Checking for categorical numerics
+        if is_categorical_type(data_column):
+            return DataTypes.CATEGORY
         
         return inferred_data_type
     
