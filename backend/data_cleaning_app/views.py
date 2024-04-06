@@ -8,6 +8,7 @@ from .serializers import DataFileSerializer
 import pandas as pd
 from pandas.errors import ParserError
 import os
+import pickle
 import redis
 
 import sys
@@ -15,7 +16,7 @@ sys.path.append('../')
 from data_cleanser import inference as inference_engine, conversion as conversion_engine
 
 logger = logging.getLogger("django")
-r = redis.Redis()
+cache = redis.Redis()
 
 
 # Create your views here.
@@ -61,9 +62,19 @@ class DataFileUploadAPIView(APIView):
                 logger.error(f"DataFileUploadAPIView : post : Received unsupported data file type: {file_name}")
                 return Response({"message": "Received unsupported data file type"}, status=status.HTTP_400_BAD_REQUEST )
             
+            df_cleaning_result = self.clean_dataframe(df)
+            df_cleaned = df_cleaning_result["data"]
+            
+            df_original_bytes = pickle.dumps(df)
+            df_cleaned_bytes = pickle.dumps(df_cleaned) # TODO: Handle cleaned data frame caching
+
+            # setting original and cleaned dataframe in cache
+            original_df_key = 'df_' + file_name + '_original'
+            cleaned_df_key = 'df_' + file_name + '_cleaned'
+            cache.set(original_df_key, df_original_bytes)
+            cache.set(cleaned_df_key, df_cleaned_bytes)
         
-            cleaned_data = self.clean_dataframe(df)
-            return Response({"message": "File cleaned successfully", "dtypes": cleaned_data["dtypes"], "data": cleaned_data["data"]}, status=status.HTTP_200_OK)
+            return Response({"message": "File cleaned successfully", "dtypes": df_cleaning_result["dtypes"], "data": df_cleaning_result["data"]}, status=status.HTTP_200_OK)
 
         else:
             return Response(file_data_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
