@@ -4,7 +4,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework import status
-from .serializers import DataFileSerializer
+from .serializers import DataFileSerializer, DataTypesChangeRequestSerializer
 import pandas as pd
 from pandas.errors import ParserError
 import os
@@ -69,12 +69,19 @@ class DataFileUploadAPIView(APIView):
             df_cleaned_bytes = pickle.dumps(df_cleaned) # TODO: Handle cleaned data frame caching
 
             # setting original and cleaned dataframe in cache
-            original_df_key = 'df_' + file_name + '_original'
-            cleaned_df_key = 'df_' + file_name + '_cleaned'
+            original_df_key = 'df_' + os.path.splitext(file_name)[0] + '_original'
+            cleaned_df_key = 'df_' + os.path.splitext(file_name)[0] + '_cleaned'
             cache.set(original_df_key, df_original_bytes)
             cache.set(cleaned_df_key, df_cleaned_bytes)
         
-            return Response({"message": "File cleaned successfully", "dtypes": df_cleaning_result["dtypes"], "data": df_cleaning_result["data"]}, status=status.HTTP_200_OK)
+            return Response(
+                {
+                    "message": "File cleaned successfully", 
+                    "dtypes": df_cleaning_result["dtypes"], 
+                    "data": df_cleaning_result["data"], 
+                    "original_data_key" : original_df_key,
+                    "cleaned_data_key" : cleaned_df_key
+                },  status=status.HTTP_200_OK)
 
         else:
             return Response(file_data_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -102,3 +109,51 @@ class DataFileUploadAPIView(APIView):
             "dtypes" : df_inferred_types,
             "data" : df_converted
         }
+    
+class UpdateColumnsDataTypesAPIView(APIView):
+    serializer_class = DataTypesChangeRequestSerializer
+    
+    def get(self, request):
+        logger.debug('DataFileUploadAPIView : get : Beginning of method')
+        return Response({"message":"UpdateColumnsDataTypesAPIView is reached"}, status=status.HTTP_200_OK)
+
+    def post(self, request):
+        logger.debug('DataFileUploadAPIView : post : Beginning of method')
+
+        serializer = self.serializer_class(data=request.data)
+        if serializer.is_valid():
+            data = serializer.validated_data
+            print('DataFileUploadAPIView : post : Request data is validated')
+
+            # Fetching the original and cleaned dataframe cache keys
+            original_df_key = data["original_data_key"]
+            cleaned_df_key = data["cleaned_data_key"]
+
+            # Loading original and cleaned dataframes from cache
+            original_df_bytes = cache.get(original_df_key)
+            original_df = pickle.loads(original_df_bytes)
+            print("Original df dtypes: \n", original_df.dtypes)
+
+            cleaned_df_bytes = cache.get(cleaned_df_key)
+            cleaned_df = pickle.loads(cleaned_df_bytes)
+            print("Cleaned df dtypes: \n", cleaned_df.dtypes)
+
+            col_dtypes_updates = data["dtypes"] # Fetch dtypes to update for the columns
+            for col_dtype_update in col_dtypes_updates:
+                col_name = col_dtype_update["col_name"]
+                type_to_cast = col_dtype_update["dtype"]
+                missing_values_handling_option = col_dtype_update["missing_values"]
+                default_value = col_dtype_update["default"]
+                invalid_values_handling_option = data["invalid_values"]
+
+                # Cast original dataframe column data to received type
+                original_df = conversion_engine.convert_col_date_type(original_df, col_name, type_to_cast, invalid_values_handling_option, missing_values_handling_option, default_value)
+                # Replace updated column in the cleaned dataframe
+                cleaned_df[col_name] = original_df[col_name]
+                print(f"Converted dtype for column '{col_name}' to '{cleaned_df[col_name].dtype}")
+
+            print("Updated dtypes:\n", cleaned_df.dtypes)
+            return Response({"message": "Request is successful."}, status=status.HTTP_200_OK)
+        
+        print(serializer.errors)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
