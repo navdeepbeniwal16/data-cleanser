@@ -1,5 +1,5 @@
 import "./App.css";
-import Dashboard from "./Dashboard";
+import DashboardPage from "./DashboardPage";
 import DataUploadPage from "./DataUploadPage";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 
@@ -9,7 +9,7 @@ function App() {
       <Router>
         <Routes>
           <Route path="/" element={<DataUploadPage />} />
-          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/dashboard" element={<DashboardPage />} />
         </Routes>
       </Router>
     </div>
