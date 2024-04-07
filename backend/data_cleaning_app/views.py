@@ -1,4 +1,6 @@
 import logging
+from django.shortcuts import render
+from django.views.generic import View
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -13,11 +15,18 @@ import redis
 
 import sys
 sys.path.append('../') 
-from data_cleanser import inference as inference_engine, conversion as conversion_engine
+from data_cleanser.inference import Inference
+from data_cleanser.conversion import Convertor
 
 logger = logging.getLogger("django")
 cache = redis.Redis()
+inference_engine = Inference(0.5)
+conversion_engine = Convertor()
 
+
+class IndexView(View):
+    def get(self, request):
+        return render(request, 'index.html')
 
 # Create your views here.
 @api_view(['GET'])
