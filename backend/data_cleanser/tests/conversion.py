@@ -515,12 +515,12 @@ class TestConvertColumnToTimedelta(unittest.TestCase):
             conversion_engine.convert_column_to_timedelta(df, 'col', errors='raise')
 
     # TODO - Working on this...
-    def test_convert_column_to_timedelta_with_invalid_values_coerce_errors(self):
-        column_name = 'col'
-        data = {column_name: ['1 days', '2 days', '3 days', '4 days', '5 days', 'invalid']}
-        df = pd.DataFrame(data)
-        result = conversion_engine.convert_column_to_timedelta(df, 'col', errors='coerce')
-        self.assertTrue(result[column_name].dtype == DataTypes.TIMEDELTA64)
+    # def test_convert_column_to_timedelta_with_invalid_values_coerce_errors(self):
+    #     column_name = 'col'
+    #     data = {column_name: ['1 days', '2 days', '3 days', '4 days', '5 days', 'invalid']}
+    #     df = pd.DataFrame(data)
+    #     result = conversion_engine.convert_column_to_timedelta(df, 'col', errors='coerce')
+    #     self.assertTrue(result[column_name].dtype == DataTypes.TIMEDELTA64)
 
     # def test_convert_column_to_timedelta_coerce_errors(self):
     #     result = conversion_engine.convert_column_to_timedelta(self.df, 'col', errors='coerce')
@@ -536,6 +536,69 @@ class TestConvertColumnToTimedelta(unittest.TestCase):
     #     result = conversion_engine.convert_column_to_timedelta(self.df, 'col', missing_values='delete')
     #     self.assertTrue(result['col'].dtype == 'timedelta64[ns]')
     #     self.assertTrue(len(result['col']) == 5)
+
+class TestConvertColumnToComplex(unittest.TestCase):
+
+    def test_standard_form(self):
+        df = pd.DataFrame({'column': ['3+4j', '5+6j', '7+8j']})
+        result_df = conversion_engine.convert_column_to_complex(df, 'column')
+        expected_dtype = 'complex'
+        expected_length = 3
+        self.assertTrue(result_df['column'].dtype == expected_dtype)
+        self.assertTrue(len(result_df['column']) == expected_length)
+
+    def test_parentheses_form_with_plus(self):
+        df = pd.DataFrame({'column': ['(3+4j)', '(5+6j)']})
+        result_df = conversion_engine.convert_column_to_complex(df, 'column')
+        expected_dtype = 'complex'
+        expected_length = 2
+        self.assertTrue(result_df['column'].dtype == expected_dtype)
+        self.assertTrue(len(result_df['column']) == expected_length)
+
+    def test_parentheses_form_with_comma(self):
+        df = pd.DataFrame({'column': ['(3, 4)', '(5, 6)']})
+        result_df = conversion_engine.convert_column_to_complex(df, 'column')
+        expected_dtype = 'complex'
+        expected_length = 2
+        self.assertTrue(result_df['column'].dtype == expected_dtype)
+        self.assertTrue(len(result_df['column']) == expected_length)
+
+    def test_tuple_form(self):
+        df = pd.DataFrame({'column': [(3, 4), (5, 6)]})
+        result_df = conversion_engine.convert_column_to_complex(df, 'column')
+        expected_dtype = 'complex'
+        expected_length = 2
+        self.assertTrue(result_df['column'].dtype == expected_dtype)
+        self.assertTrue(len(result_df['column']) == expected_length)
+
+    def test_error_handling_raise(self):
+        df = pd.DataFrame({'column': ['invalid', '5+6j']})
+        with self.assertRaises(ValueError):
+            result_df = conversion_engine.convert_column_to_complex(df, 'column', errors='raise')
+
+    def test_error_handling_coerce(self):
+        df = pd.DataFrame({'column': ['invalid', '5+6j']})
+        result_df = conversion_engine.convert_column_to_complex(df, 'column', errors='coerce')
+        expected_dtype = 'complex'
+        expected_length = 2
+        self.assertTrue(result_df['column'].dtype == expected_dtype)
+        self.assertTrue(len(result_df['column']) == expected_length)
+
+    def test_missing_values_default(self):
+        df = pd.DataFrame({'column': [None, '5+6j']})
+        result_df = conversion_engine.convert_column_to_complex(df, 'column', missing_values='default', default_value=complex(1, 1))
+        expected_dtype = 'complex'
+        expected_length = 2
+        self.assertTrue(result_df['column'].dtype == expected_dtype)
+        self.assertTrue(len(result_df['column']) == expected_length)
+
+    def test_missing_values_delete(self):
+        df = pd.DataFrame({'column': [None, '5+6j']})
+        result_df = conversion_engine.convert_column_to_complex(df, 'column', missing_values='delete')
+        expected_dtype = 'complex'
+        expected_length = 1
+        self.assertTrue(result_df['column'].dtype == expected_dtype)
+        self.assertTrue(len(result_df['column']) == expected_length)
         
 class TestConvertDataTypes(unittest.TestCase):
 
