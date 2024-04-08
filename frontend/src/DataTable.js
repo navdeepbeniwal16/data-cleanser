@@ -7,6 +7,7 @@ import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
 import { Typography } from "@mui/material";
 import dataTypeMappings from "./dataTypes";
+import Box from "@mui/material/Box";
 
 let dataRowsCount = 0;
 
@@ -51,27 +52,29 @@ export default function DataTable({ data, dtypes }) {
       >
         Cleaned Data
       </Typography>
-      <Table size="small">
-        <TableHead>
-          <TableRow>
-            {Object.entries(dtypes).map(([columnName, type]) => (
-              <TableCell key={columnName}>
-                <strong>{columnName}</strong> <br></br>
-                {dataTypeMappings[type]}
-              </TableCell>
-            ))}
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {getListRowsData(data).map((row, rowIndex) => (
-            <TableRow key={rowIndex}>
-              {getDatasetColumnNames(data).map((colName, colIndex) => (
-                <TableCell key={colIndex}>{String(row[colName])}</TableCell>
+      <Box sx={{ overflowX: "auto" }}>
+        <Table size="small">
+          <TableHead>
+            <TableRow>
+              {Object.entries(dtypes).map(([columnName, type]) => (
+                <TableCell key={columnName}>
+                  <strong>{columnName}</strong> <br></br>
+                  {dataTypeMappings[type]}
+                </TableCell>
               ))}
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+          </TableHead>
+          <TableBody>
+            {getListRowsData(data).map((row, rowIndex) => (
+              <TableRow key={rowIndex}>
+                {getDatasetColumnNames(data).map((colName, colIndex) => (
+                  <TableCell key={colIndex}>{String(row[colName])}</TableCell>
+                ))}
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </Box>
     </React.Fragment>
   );
 }
