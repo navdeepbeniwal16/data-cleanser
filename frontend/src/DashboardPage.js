@@ -14,6 +14,7 @@ import DataTable from "./DataTable";
 import DTypesConfigurationPane from "./DTypesConfigurationPane";
 
 const defaultTheme = createTheme();
+let currentPageNumber = 1;
 
 export default function DashboardPage() {
   const location = useLocation();
@@ -43,6 +44,57 @@ export default function DashboardPage() {
     }
   }, [receivedData, navigate]);
 
+  const getPreviousPage = () => {
+    if (currentPageNumber > 1) {
+      getPage(currentPageNumber - 1);
+    }
+  };
+
+  const getNextPage = () => {
+    getPage(currentPageNumber + 1);
+  };
+
+  const getPage = (pageNumber) => {
+    fetch(
+      "http://localhost:8000/data_cleanser/data/" +
+        receivedData["cleaned_data_key"] +
+        "?page=" +
+        pageNumber,
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    )
+      .then((response) => {
+        if (response.ok) {
+          return response.json();
+        }
+        throw new Error("Network response was not ok.");
+      })
+      .then((data) => {
+        currentPageNumber = pageNumber;
+        console.log("Paginated data fetched successfully:", data);
+        const dataToReplaceWith = { ...receivedData, data: data["data"] };
+
+        setReceivedData(dataToReplaceWith);
+        console.log("Replaced received data:", receivedData);
+      })
+      .catch((error) => {
+        console.error(
+          "There has been a problem with your fetch operation:",
+          error
+        );
+        openSnackbar({
+          vertical: "bottom",
+          horizontal: "center",
+          requestSuccess: "error",
+          message: "Reached the end of the dataset.",
+        })();
+      });
+  };
+
   const onApplyDtypesConfigs = (newDtypesConfigsArr) => {
     const requestData = {
       dtypes: newDtypesConfigsArr,
@@ -51,13 +103,17 @@ export default function DashboardPage() {
       cleaned_data_key: receivedData["cleaned_data_key"],
     };
 
-    fetch("http://localhost:8000/data_cleanser/update-columns-dtypes/", {
-      method: "POST",
-      body: JSON.stringify(requestData),
-      headers: {
-        "Content-Type": "application/json",
-      },
-    })
+    fetch(
+      "http://localhost:8000/data_cleanser/update-columns-dtypes/?page=" +
+        currentPageNumber,
+      {
+        method: "POST",
+        body: JSON.stringify(requestData),
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    )
       .then((response) => {
         if (response.ok) {
           return response.json();
@@ -151,6 +207,9 @@ export default function DashboardPage() {
                   <DataTable
                     data={receivedData["data"]}
                     dtypes={receivedData["dtypes"]}
+                    currentPage={currentPageNumber}
+                    onPrevPage={getPreviousPage}
+                    onNextPage={getNextPage}
                   />
                 </Paper>
               </Grid>
