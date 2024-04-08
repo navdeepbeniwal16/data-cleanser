@@ -1,0 +1,21 @@
+Name,Birthdate,Score,Grade,Height,Weight,Is Student,Stream,Complex Number,Time Since Exam
+Alice,1/01/1990,90,A,165.5,55.2,True,Science,3+4j,5 days
+Bob,2/02/1991,75,B,170.2,60.3,False,Arts,5+6j,10 days
+Charlie,3/03/1992,85,A,180.1,70.4,True,Engineering,7+8j,15 days
+David,4/04/1993,70,B,175.3,65.5,False,Mathematics,9+10j,20 days
+Eve,5/05/1994,65,A,160.4,50.6,True,History,11+12j,25 days
+Frank,6/06/1995,80,B,182.5,72.7,False,Literature,13+14j,30 days
+Grace,7/07/1996,95,A,167.6,57.8,True,Physics,15+16j,35 days
+Hannah,8/08/1997,60,B,172.7,62.9,False,Chemistry,17+18j,40 days
+Ian,9/09/1998,85,A,185.8,75.0,True,Biology,19+20j,45 days
+Jill,10/10/1999,70,B,178.9,67.1,False,Geography,21+22j,50 days
+Kevin,11/11/2000,55,C,165.0,56.0,True,Science,23+24j,55 days
+Laura,12/12/2001,90,A,170.5,61.2,False,Arts,25+26j,60 days
+Mike,13/01/2002,85,B,175.8,66.3,True,Engineering,27+28j,65 days
+Nina,14/02/2003,70,C,160.7,51.4,False,Mathematics,29+30j,70 days
+Oscar,15/03/2004,65,A,182.9,73.5,True,History,31+32j,75 days
+Paula,16/04/2005,80,B,167.2,58.6,False,Literature,33+34j,80 days
+Quinn,17/05/2006,95,A,172.5,63.7,True,Physics,35+36j,85 days
+Rita,18/06/2007,60,C,185.1,74.8,False,Chemistry,37+38j,90 days
+Steve,19/07/2008,85,A,168.3,59.9,True,Biology,39+40j,95 days
+Tina,20/08/2009,70,B,173.6,64.0,False,Geography,41+42j,100 days
