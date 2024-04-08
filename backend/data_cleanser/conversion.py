@@ -259,7 +259,11 @@ class Convertor:
                 df_copy.dropna(subset=[column], inplace=True)
                 df_copy[column] = pd.to_datetime(df_copy[column], errors=errors)
             else:
-                raise ValueError('Invalid value for missing_values. Use one of "ignore", "default", or "delete".')
+                raise KeyError('Invalid value for missing_values. Use one of "ignore", "default", or "delete".')
+            
+            if df_copy[column].isna().all():
+                raise ValueError(f'Error converting column "{column}" to {DataTypes.DATETIME64}: Resulting in nan values column.')
+            
             return df_copy
         except ValueError as e:
             raise ValueError(f'Error converting column "{column}" to {DataTypes.DATETIME64}: {str(e)}')
@@ -452,6 +456,9 @@ class Convertor:
                 df_copy[column] = pd.to_timedelta(df_copy[column], errors=errors)
             else:
                 raise ValueError('Invalid value for missing_values. Use one of "ignore", "default", or "delete".')
+            
+            if df_copy[column].isna().all():
+                raise ValueError(f'Error converting column "{column}" to {DataTypes.TIMEDELTA64}: Resulting in nan values column.')
             
             return df_copy
         except ValueError as e:
