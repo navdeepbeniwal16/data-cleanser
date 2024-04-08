@@ -89,6 +89,10 @@ class DataFileUploadAPIView(APIView):
             cleaned_df_key = 'df_' + os.path.splitext(file_name)[0] + '_cleaned'
             cache.set(original_df_key, df_original_bytes)
             cache.set(cleaned_df_key, df_cleaned_bytes)
+
+            for col_name in df_cleaned:
+                if df_cleaned[col_name].dtype == 'complex':
+                    df_cleaned[col_name] = df_cleaned[col_name].astype(str)
         
             return Response(
                 {
@@ -151,8 +155,8 @@ class UpdateColumnsDataTypesAPIView(APIView):
             print("Original df dtypes: \n", original_df.dtypes)
 
             cleaned_df_bytes = cache.get(cleaned_df_key)
-            cleaned_df = pickle.loads(cleaned_df_bytes)
-            print("Cleaned df dtypes: \n", cleaned_df.dtypes)
+            df_cleaned = pickle.loads(cleaned_df_bytes)
+            print("Cleaned df dtypes: \n", df_cleaned.dtypes)
 
             col_dtypes_updates = data["dtypes"] # Fetch dtypes to update for the columns
 
@@ -174,21 +178,26 @@ class UpdateColumnsDataTypesAPIView(APIView):
                     return Response({ "message" : "Error cleaning dataframe", "error" : str(e) }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
                 # Replace updated column in the cleaned dataframe
-                cleaned_df[col_name] = original_df[col_name]
+                df_cleaned[col_name] = original_df[col_name]
                 
-                print(f"Converted dtype for column '{col_name}' to '{cleaned_df[col_name].dtype}")
+                print(f"Converted dtype for column '{col_name}' to '{df_cleaned[col_name].dtype}")
 
             # Caching the updated cleaned dataframe
-            df_cleaned_bytes = pickle.dumps(cleaned_df)
+            df_cleaned_bytes = pickle.dumps(df_cleaned)
             cache.set(cleaned_df_key, df_cleaned_bytes)
             
             # Create updated dtypes dict to be sent to the clinet
             df_cleaned_dtypes = {} 
-            for col_name in cleaned_df:
-                df_cleaned_dtypes[col_name] = str(cleaned_df[col_name].dtype)
+            for col_name in df_cleaned:
+                df_cleaned_dtypes[col_name] = str(df_cleaned[col_name].dtype)
+
+            # Converting complex dtypes columns to strings to allow json serialization
+            for col_name in df_cleaned:
+                if df_cleaned[col_name].dtype == 'complex':
+                    df_cleaned[col_name] = df_cleaned[col_name].astype(str)
 
             print("Updated dtypes:\n", df_cleaned_dtypes) # TODO: TBR
-            return Response({"message": "Request is successful.", "data": cleaned_df, "dtypes" : df_cleaned_dtypes, "original_data_key" : original_df_key, "cleaned_data_key" : cleaned_df_key}, status=status.HTTP_200_OK)
+            return Response({"message": "Request is successful.", "data": df_cleaned, "dtypes" : df_cleaned_dtypes, "original_data_key" : original_df_key, "cleaned_data_key" : cleaned_df_key}, status=status.HTTP_200_OK)
         
         print(serializer.errors) # TODO: TBR
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
