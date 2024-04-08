@@ -71,7 +71,14 @@ class DataFileUploadAPIView(APIView):
                 logger.error(f"DataFileUploadAPIView : post : Received unsupported data file type: {file_name}")
                 return Response({"message": "Received unsupported data file type"}, status=status.HTTP_400_BAD_REQUEST )
             
-            df_cleaning_result = self.clean_dataframe(df)
+            try:
+                df_cleaning_result = self.clean_dataframe(df)
+            except ValueError as e:
+                return Response({ "message" : "Error cleaning dataframe", "error" : e }, status=status.HTTP_400_BAD_REQUEST)
+            except Exception as e:
+                return Response({ "message" : "Error cleaning dataframe", "error" : e }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            
+            
             df_cleaned = df_cleaning_result["data"]
             
             df_original_bytes = pickle.dumps(df)
@@ -148,6 +155,7 @@ class UpdateColumnsDataTypesAPIView(APIView):
             print("Cleaned df dtypes: \n", cleaned_df.dtypes)
 
             col_dtypes_updates = data["dtypes"] # Fetch dtypes to update for the columns
+
             for col_dtype_update in col_dtypes_updates:
                 col_name = col_dtype_update["col_name"]
                 type_to_cast = col_dtype_update["dtype"]
@@ -156,13 +164,31 @@ class UpdateColumnsDataTypesAPIView(APIView):
                 invalid_values_handling_option = data["invalid_values"]
 
                 # Cast original dataframe column data to received type
-                original_df = conversion_engine.convert_col_date_type(original_df, col_name, type_to_cast, invalid_values_handling_option, missing_values_handling_option, default_value)
+                try:
+                    original_df = conversion_engine.convert_col_date_type(original_df, col_name, type_to_cast, invalid_values_handling_option, missing_values_handling_option, default_value)
+                except ValueError as e:
+                    return Response({ "message" : "Error cleaning dataframe", "error" : str(e) }, status=status.HTTP_400_BAD_REQUEST)
+                except TypeError as e:
+                    return Response({ "message" : "Invalid data passed", "error" : str(e) }, status=status.HTTP_400_BAD_REQUEST)
+                except Exception as e:
+                    return Response({ "message" : "Error cleaning dataframe", "error" : str(e) }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
                 # Replace updated column in the cleaned dataframe
                 cleaned_df[col_name] = original_df[col_name]
+                
                 print(f"Converted dtype for column '{col_name}' to '{cleaned_df[col_name].dtype}")
 
-            print("Updated dtypes:\n", cleaned_df.dtypes)
-            return Response({"message": "Request is successful."}, status=status.HTTP_200_OK)
+            # Caching the updated cleaned dataframe
+            df_cleaned_bytes = pickle.dumps(cleaned_df)
+            cache.set(cleaned_df_key, df_cleaned_bytes)
+            
+            # Create updated dtypes dict to be sent to the clinet
+            df_cleaned_dtypes = {} 
+            for col_name in cleaned_df:
+                df_cleaned_dtypes[col_name] = str(cleaned_df[col_name].dtype)
+
+            print("Updated dtypes:\n", df_cleaned_dtypes) # TODO: TBR
+            return Response({"message": "Request is successful.", "data": cleaned_df, "dtypes" : df_cleaned_dtypes, "original_data_key" : original_df_key, "cleaned_data_key" : cleaned_df_key}, status=status.HTTP_200_OK)
         
-        print(serializer.errors)
+        print(serializer.errors) # TODO: TBR
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
