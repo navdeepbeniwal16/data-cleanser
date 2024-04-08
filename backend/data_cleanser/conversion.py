@@ -414,7 +414,7 @@ class Convertor:
             return pd.Timedelta(hours=hours, minutes=int(parts[1]))
 
         else:
-            raise ValueError(f"Invalid timedelta format: {timedelta_string}")
+            return np.nan # Return a nan if value can't be parsed
     
 
     def convert_column_to_timedelta(self, df, column, errors='raise', missing_values='ignore', default_value=pd.Timedelta(0)):
@@ -463,12 +463,111 @@ class Convertor:
             return df_copy
         except ValueError as e:
             # Check for pandas to_timedelta() unsupported timedelta formats
-            try:
-                df_copy[column] = df_copy[column].map(str).map(self._parse_pandas_unsupported_timedelta_format)
-                return df_copy
-            except ValueError:
+            df_copy[column] = df_copy[column].map(str).map(self._parse_pandas_unsupported_timedelta_format)
+            if df_copy[column].isna().all():
                 raise ValueError(f'Error converting column "{column}" to {DataTypes.TIMEDELTA64}: {str(e)}')
+                
+            return df_copy
+
+
+    def _parse_complex_number(sellf, complex_string):
+        """
+        Parse complex number strings in various formats to a complex number object
+
+        Args:
+        - complex_string (str): String representing a complex number in various formats
+
+        Returns:
+        - complex: Complex number object parsed from the input string
+
+        Raises:
+        - ValueError: If the input string does not match any of the supported complex number formats
+        """
+
+        # Handling standard form: a + bj
+        pattern = r'^([+-]?[0-9]*\.?[0-9]*\s*)([+-]\s*[0-9]*\.?[0-9]+)j$'
+        match = re.match(pattern, complex_string.strip())
+        if match:
+            return complex(complex_string.strip().replace(' ', ''))
         
+        # Handling parentheses form: (a + bj)
+        pattern = r'^\(\s*([+-]?[0-9]*\.?[0-9]*)\s*\+\s*([+-]?[0-9]*\.?[0-9]*)j\s*\)$'
+        match = re.match(pattern, complex_string.strip())
+        if match:
+            return complex(float(match.group(1)), float(match.group(2)))
+
+        # Handling parentheses form: (a, b)
+        pattern = r'^\(\s*([+-]?[0-9]*\.?[0-9]*)\s*,\s*([+-]?[0-9]*\.?[0-9]*)\s*\)$'
+        match = re.match(pattern, complex_string.strip())
+        if match:
+            return complex(float(match.group(1)), float(match.group(2)))
+
+        # Handling tuple form: (a, b)
+        pattern = r'^\(\s*([+-]?[0-9]*\.?[0-9]*)\s*,\s*([+-]?[0-9]*\.?[0-9]*)\s*\)$'
+        match = re.match(pattern, complex_string.strip())
+        if match:
+            return complex(float(match.group(1)), float(match.group(2)))
+        
+        return np.nan
+    
+    
+    def _convert_value_to_complex(self, value, errors):
+        try:
+            result = self._parse_complex_number(str(value))
+            if pd.isna(result) and errors == 'raise':
+                raise ValueError(f'Conversion resulted in NaN for column')
+            return result
+        except Exception as e:
+            if errors == 'raise':
+                raise e
+            return None
+        
+    
+    def convert_column_to_complex(self, df, column, errors='raise', missing_values='ignore', default_value=complex(0, 0)):
+        """
+        Convert a column in the DataFrame to a complex data type.
+
+        Args:
+        - df (pd.DataFrame): Input DataFrame.
+        - column (str): Column name to convert.
+        - errors (str): How to handle errors in conversion. Default is 'raise'. Options are 'coerce', 'raise'.
+        - missing_values (str): How to handle missing values. Default is 'ignore'. Options are 'ignore', 'default', 'delete'.
+        - default_value (complex): Default value to use for missing values. Default is complex(0, 0).
+
+        Returns:
+        - pd.DataFrame: DataFrame with the specified column converted to complex data type.
+
+        Raises:
+        - KeyError: If an invalid argument is provided for 'errors' or 'missing_values'.
+        - ValueError: If an error occurs during conversion, resulting in NaN values in the column.
+        """
+        
+        # Handling invalid errors and missing_values arguments
+        error_options = [_ERROR_HANDLING_OPTIONS.RAISE, _ERROR_HANDLING_OPTIONS.COERCE]
+        if errors not in error_options:
+            raise KeyError(f'Invalid argument for \'errors\'. Please provide one of {error_options}')
+        self._is_valid_missing_value_option(missing_values)
+
+        self._dataframe_has_column(df, column)
+
+        # Convert the column to a complex type
+        df_copy = df.copy()  # Create a copy of the DataFrame to avoid modifying the original
+        if missing_values == _MISSING_VALUE_OPTIONS.IGNORE:
+            df_copy[column] = df_copy[column].map(lambda value: self._convert_value_to_complex(value, errors))
+
+        elif missing_values == _MISSING_VALUE_OPTIONS.DEFAULT:
+            df_copy[column] = df_copy[column].fillna(default_value).map(lambda value: self._convert_value_to_complex(value, errors))
+        elif missing_values == _MISSING_VALUE_OPTIONS.DELETE:
+            df_copy.dropna(subset=[column], inplace=True)
+            df_copy[column] = df_copy[column].map(lambda value: self._convert_value_to_complex(value, errors))
+        else:
+            raise KeyError(f'Error converting column "{column}" to {DataTypes.COMPLEX}. Invalid value for missing_values. Use one of "ignore", "default", or "delete".')
+            
+        if df_copy[column].isna().all():
+            raise ValueError(f'Error converting column "{column}" to {DataTypes.COMPLEX}. Resulting in nan values column.')
+            
+        return df_copy
+
 
     def convert_col_date_type(self, df, column, type_to_cast, errors='coerce', missing_values='ignore', default_value=None):
         """
@@ -502,6 +601,8 @@ class Convertor:
             df = self.convert_column_to_timedelta(df, column, errors, missing_values, default_value)
         elif type_to_cast == DataTypes.CATEGORY:
             df = self.convert_column_to_category(df, column, missing_values, default_value)
+        elif type_to_cast == DataTypes.COMPLEX:
+            df = self.convert_column_to_complex(df, column, errors, missing_values, default_value)
         else:
             pass
 
