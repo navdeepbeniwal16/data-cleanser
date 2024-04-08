@@ -137,6 +137,35 @@ class DataFileUploadAPIView(APIView):
             "data" : df_converted
         }
     
+class PaginatedDataView(APIView):
+    def get(self, request, cleaned_data_key):
+        
+        # Retrieve the cleaned data from the cache
+        df_cleaned_bytes = cache.get(cleaned_data_key)
+        if df_cleaned_bytes is None:
+            return Response({"message": "Data not found. Please check your data key"}, status=status.HTTP_404_NOT_FOUND)
+
+        df_cleaned = pickle.loads(df_cleaned_bytes)
+
+        # Create updated dtypes dict to be sent to the clinet
+        df_cleaned_dtypes = {} 
+        for col_name in df_cleaned:
+            df_cleaned_dtypes[col_name] = str(df_cleaned[col_name].dtype)
+
+        # Converting complex dtypes columns to strings to allow json serialization
+        for col_name in df_cleaned:
+            if df_cleaned[col_name].dtype == 'complex':
+                df_cleaned[col_name] = df_cleaned[col_name].astype(str)
+
+        paginator = CustomPagination()
+        paginated_data = paginator.paginate_queryset(df_cleaned.to_dict(orient='records'), request)
+
+        return Response({
+            "message": "Successfully retreived data.", 
+            "data": paginated_data, 
+            "cleaned_data_key" : cleaned_data_key}, 
+            status=status.HTTP_200_OK)
+    
 class UpdateColumnsDataTypesAPIView(APIView):
     serializer_class = DataTypesChangeRequestSerializer
     
