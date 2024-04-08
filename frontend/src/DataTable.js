@@ -6,6 +6,7 @@ import TableCell from "@mui/material/TableCell";
 import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
 import { Typography } from "@mui/material";
+import dataTypeMappings from "./dataTypes";
 
 let dataRowsCount = 0;
 
@@ -37,22 +38,26 @@ const getListRowsData = (data) => {
   return rows;
 };
 
-function preventDefault(event) {
-  event.preventDefault();
-}
-
 export default function DataTable({ data, dtypes }) {
   return (
     <React.Fragment>
-      <Typography component="h2" variant="h6" color="primary" gutterBottom>
-        Data
+      <Typography
+        component="h2"
+        variant="h6"
+        color="primary"
+        gutterBottom
+        align="left"
+        sx={{ pl: 2 }}
+      >
+        Cleaned Data
       </Typography>
       <Table size="small">
         <TableHead>
           <TableRow>
             {Object.entries(dtypes).map(([columnName, type]) => (
               <TableCell key={columnName}>
-                {columnName} ({type})
+                <strong>{columnName}</strong> <br></br>
+                {dataTypeMappings[type]}
               </TableCell>
             ))}
           </TableRow>
@@ -67,9 +72,6 @@ export default function DataTable({ data, dtypes }) {
           ))}
         </TableBody>
       </Table>
-      <Link color="primary" href="#" onClick={preventDefault} sx={{ mt: 3 }}>
-        Load more data
-      </Link>
     </React.Fragment>
   );
 }

@@ -13,6 +13,7 @@ import {
   Button,
 } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import dataTypeMappings from "./dataTypes";
 
 const dataTypes = [
   "object",
@@ -70,13 +71,24 @@ export default function DTypesConfigurationPane({ dtypes, onApply }) {
 
   return (
     <Box sx={{ width: "100%" }}>
+      <Typography
+        component="h2"
+        variant="h6"
+        color="primary"
+        gutterBottom
+        align="left"
+        sx={{ pl: 2 }}
+      >
+        Column Type Configuration
+      </Typography>
+
       {Object.entries(dtypes).map(([column, type]) => (
         <Accordion key={column}>
           <AccordionSummary expandIcon={<ExpandMoreIcon />}>
             <Typography>{column}</Typography>
           </AccordionSummary>
           <AccordionDetails>
-            <Typography>Current type: {type}</Typography>
+            <Typography>Current type: {dataTypeMappings[type]}</Typography>
             <FormControl fullWidth margin="normal">
               <InputLabel>New type</InputLabel>
               <Select
@@ -86,7 +98,7 @@ export default function DTypesConfigurationPane({ dtypes, onApply }) {
               >
                 {dataTypes.map((dataType) => (
                   <MenuItem key={dataType} value={dataType}>
-                    {dataType}
+                    {dataTypeMappings[dataType]}
                   </MenuItem>
                 ))}
               </Select>
