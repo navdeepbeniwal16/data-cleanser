@@ -151,10 +151,16 @@ class Convertor:
             return float(base) * 10**float(exponent)
 
         else:
-            raise ValueError(f"Invalid format: '{numeric_string}' is not a formatted numeric string")
+            return np.nan
 
 
     """ Public apis to support conversion """
+
+    def _safe_convert_to_float(self, value):
+        try:
+            return float(value)
+        except ValueError:
+            return np.nan
 
     def convert_column_to_numeric(self, df, column, numeric_type='float64', errors='raise', missing_values='ignore', default_value=None):
         """
@@ -215,7 +221,18 @@ class Convertor:
             # Check for formatted numeric type
             try:
                 df_copy[column] = df_copy[column].map(str).map(self._parse_formatted_numeric_string)
-                df_copy[column] = df_copy[column].astype(numeric_type)
+                has_nan = df_copy[column].isna().any()
+                has_inf = np.isinf(df_copy[column]).any()
+
+                if has_nan or has_inf:
+                    # Fill NaN and infinite values with a default a default value of 0.0
+                    df_copy[column] = df_copy[column].replace([np.inf, -np.inf], np.nan).fillna(0.0)
+                    numeric_type = DataTypes.FLOAT64
+
+                
+                # Safely convert the column to float
+                df_copy[column] = df_copy[column].apply(self._safe_convert_to_float)
+
                 return df_copy
             except ValueError:
                 raise ValueError(f'Error converting column "{column}" to {numeric_type}: {str(e)}')
@@ -470,7 +487,7 @@ class Convertor:
             return df_copy
 
 
-    def _parse_complex_number(sellf, complex_string):
+    def _parse_complex_number(self, complex_string):
         """
         Parse complex number strings in various formats to a complex number object
 
@@ -590,7 +607,7 @@ class Convertor:
         """
         
         if type_to_cast == DataTypes.OBJECT:
-            pass
+            df[column] = df[column].astype(DataTypes.OBJECT)
         if type_to_cast in get_numeric_types():
             df = self.convert_column_to_numeric(df, column, type_to_cast, errors, missing_values, default_value)
         elif type_to_cast == DataTypes.BOOLEAN:
