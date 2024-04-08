@@ -19,6 +19,7 @@ sys.path.append('../')
 from data_cleanser.inference import Inference
 from data_cleanser.conversion import Convertor
 
+# Initialising logger, cache, inference (for type inference) and convertor (for type/data conversion) instance
 logger = logging.getLogger("django")
 cache = redis.Redis()
 inference_engine = Inference(0.5)
@@ -26,7 +27,6 @@ conversion_engine = Convertor()
 
 class CustomPagination(PageNumberPagination):
     page_size = 10  # Default number of items per page
-
 
 class IndexView(View):
     def get(self, request):
@@ -42,8 +42,8 @@ class DataFileUploadAPIView(APIView):
     serializer_class = DataFileSerializer
 
     def post(self, request):
-        
-        logger.debug('DataFileUploadAPIView : post : Beginning of method')
+    
+        logger.debug('DataFileUploadAPIView: Starting POST method')
         
         file_data_serializer = self.serializer_class(data=request.data)
         
@@ -53,64 +53,72 @@ class DataFileUploadAPIView(APIView):
             file_name = uploaded_file.name
             file_extension = os.path.splitext(file_name)[1]
 
+            logger.debug(f'DataFileUploadAPIView: Processing file "{file_name}" with extension "{file_extension}"')
+
             df = pd.DataFrame() # Define an empty dataframe to be replaced with parsed one
 
             if file_extension == '.csv':
                 try:
                     df = pd.read_csv(uploaded_file)
-                    logger.debug('DataFileUploadAPIView : post : Successfully parsed data from csv file.')
-                except ParserError:
-                    logger.error(f"Error occurred while parsing file: {file_name}")
+                    logger.debug('DataFileUploadAPIView: Successfully parsed CSV file')
+                except ParserError as e:
+                    logger.error(f"DataFileUploadAPIView: Error occurred while parsing CSV file: {file_name}, error: {str(e)}")
                     return Response({"message": f"Error occurred while parsing file: {file_name}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
             
             elif file_extension in ['.xls', '.xlsx', '.xlsm', '.xlsb']:
                 try:
                     df = pd.read_excel(uploaded_file)
-                    logger.debug('DataFileUploadAPIView : post : Successfully parsed data from excel file.')
-                except ParserError:
-                    logger.error(f"DataFileUploadAPIView : post : Error occurred while parsing file: {file_name}")
+                    logger.debug('DataFileUploadAPIView: Successfully parsed Excel file')
+                except ParserError as e:
+                    logger.error(f"DataFileUploadAPIView: Error occurred while parsing Excel file: {file_name}, error: {str(e)}")
                     return Response({"message": f"Error occurred while parsing file: {file_name}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
             
             else:
-                logger.error(f"DataFileUploadAPIView : post : Received unsupported data file type: {file_name}")
+                logger.error(f"DataFileUploadAPIView: Unsupported file type: {file_extension}")
                 return Response({"message": "Received unsupported data file type"}, status=status.HTTP_400_BAD_REQUEST )
             
             try:
                 df_cleaning_result = self.clean_dataframe(df)
+                logger.debug('DataFileUploadAPIView: Dataframe cleaned successfully')
             except ValueError as e:
-                return Response({ "message" : "Error cleaning dataframe", "error" : e }, status=status.HTTP_400_BAD_REQUEST)
+                logger.error(f"DataFileUploadAPIView: Error cleaning dataframe: {str(e)}")
+                return Response({ "message" : "Error cleaning dataframe", "error" : str(e) }, status=status.HTTP_400_BAD_REQUEST)
             except Exception as e:
-                return Response({ "message" : "Error cleaning dataframe", "error" : e }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                logger.error(f"DataFileUploadAPIView: Unexpected error cleaning dataframe: {str(e)}")
+                return Response({ "message" : "Error cleaning dataframe", "error" : str(e) }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
             
             
             df_cleaned = df_cleaning_result["data"]
             
             df_original_bytes = pickle.dumps(df)
-            df_cleaned_bytes = pickle.dumps(df_cleaned) # TODO: Handle cleaned data frame caching
+            df_cleaned_bytes = pickle.dumps(df_cleaned)
 
-            # setting original and cleaned dataframe in cache
+            # Setting original and cleaned dataframe in cache
             original_df_key = 'df_' + os.path.splitext(file_name)[0] + '_original'
             cleaned_df_key = 'df_' + os.path.splitext(file_name)[0] + '_cleaned'
             cache.set(original_df_key, df_original_bytes)
             cache.set(cleaned_df_key, df_cleaned_bytes)
+            logger.debug('DataFileUploadAPIView: Dataframes cached successfully')
 
             for col_name in df_cleaned:
                 if df_cleaned[col_name].dtype == 'complex':
                     df_cleaned[col_name] = df_cleaned[col_name].astype(str)
-
+            
+            # Instantiate paginator for supporting paginated data
             paginator = CustomPagination()
             paginated_data = paginator.paginate_queryset(df_cleaned.to_dict(orient='records'), request)
-        
+            logger.debug('DataFileUploadAPIView: Data paginated successfully')
+            
             return Response(
                 {
-                    "message": "File cleaned successfully", 
+                    "message": "Data uploaded and processed successfully", 
                     "dtypes": df_cleaning_result["dtypes"], 
                     "data": paginated_data, 
                     "original_data_key" : original_df_key,
                     "cleaned_data_key" : cleaned_df_key
                 },  status=status.HTTP_200_OK)
-
         else:
+            logger.error(f"DataFileUploadAPIView: Invalid file data serializer: {file_data_serializer.errors}")
             return Response(file_data_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         
     def clean_dataframe(self, df):
@@ -126,28 +134,37 @@ class DataFileUploadAPIView(APIView):
 
         # Converting data to inferrred data types
         logger.debug("DataFileUploadAPIView : clean_dataframe : Converting received data to inferred types")
-        df_converted = conversion_engine.convert_data_types(df, df_inferred_types)
+        df_cleaned = conversion_engine.convert_data_types(df, df_inferred_types)
         logger.debug("DataFileUploadAPIView : clean_dataframe : Converted received data to inferred types")
-        logger.debug(df_converted)
+        logger.debug(df_cleaned)
+
+        # Create updated dtypes dict to be sent to the clinet
+        df_cleaned_dtypes = {} 
+        for col_name in df_cleaned:
+            df_cleaned_dtypes[col_name] = str(df_cleaned[col_name].dtype)
         
-        logger.debug(str([(df_converted[col_name].name, str(df_converted[col_name].dtype)) for col_name in df_converted]))
+        logger.debug(str([(df_cleaned[col_name].name, str(df_cleaned[col_name].dtype)) for col_name in df_cleaned]))
 
         return {
-            "dtypes" : df_inferred_types,
-            "data" : df_converted
+            "dtypes" : df_cleaned_dtypes,
+            "data" : df_cleaned
         }
     
 class PaginatedDataView(APIView):
     def get(self, request, cleaned_data_key):
         
+        logger.debug(f'PaginatedDataView : get : Requesting paginated data for key: {cleaned_data_key}')
+        
         # Retrieve the cleaned data from the cache
         df_cleaned_bytes = cache.get(cleaned_data_key)
         if df_cleaned_bytes is None:
+            logger.error(f'PaginatedDataView : get : Data not found for key: {cleaned_data_key}')
             return Response({"message": "Data not found. Please check your data key"}, status=status.HTTP_404_NOT_FOUND)
 
         df_cleaned = pickle.loads(df_cleaned_bytes)
+        logger.debug(f'PaginatedDataView : get : Successfully retrieved cleaned data from cache for key: {cleaned_data_key}')
 
-        # Create updated dtypes dict to be sent to the clinet
+        # Create updated dtypes dict to be sent to the client
         df_cleaned_dtypes = {} 
         for col_name in df_cleaned:
             df_cleaned_dtypes[col_name] = str(df_cleaned[col_name].dtype)
@@ -159,27 +176,24 @@ class PaginatedDataView(APIView):
 
         paginator = CustomPagination()
         paginated_data = paginator.paginate_queryset(df_cleaned.to_dict(orient='records'), request)
+        logger.debug(f'PaginatedDataView : get : Returning paginated cleaned data for key: {cleaned_data_key}')
 
         return Response({
-            "message": "Successfully retreived data.", 
+            "message": "Successfully retrieved paginated data.", 
             "data": paginated_data, 
             "cleaned_data_key" : cleaned_data_key}, 
             status=status.HTTP_200_OK)
-    
+
 class UpdateColumnsDataTypesAPIView(APIView):
     serializer_class = DataTypesChangeRequestSerializer
-    
-    def get(self, request):
-        logger.debug('DataFileUploadAPIView : get : Beginning of method')
-        return Response({"message":"UpdateColumnsDataTypesAPIView is reached"}, status=status.HTTP_200_OK)
 
     def post(self, request):
-        logger.debug('DataFileUploadAPIView : post : Beginning of method')
+        logger.debug('UpdateColumnsDataTypesAPIView : post : Beginning of method')
 
         serializer = self.serializer_class(data=request.data)
         if serializer.is_valid():
             data = serializer.validated_data
-            print('DataFileUploadAPIView : post : Request data is validated')
+            logger.debug('UpdateColumnsDataTypesAPIView : post : Request data is validated')
 
             # Fetching the original and cleaned dataframe cache keys
             original_df_key = data["original_data_key"]
@@ -188,11 +202,9 @@ class UpdateColumnsDataTypesAPIView(APIView):
             # Loading original and cleaned dataframes from cache
             original_df_bytes = cache.get(original_df_key)
             original_df = pickle.loads(original_df_bytes)
-            print("Original df dtypes: \n", original_df.dtypes)
 
             cleaned_df_bytes = cache.get(cleaned_df_key)
             df_cleaned = pickle.loads(cleaned_df_bytes)
-            print("Cleaned df dtypes: \n", df_cleaned.dtypes)
 
             col_dtypes_updates = data["dtypes"] # Fetch dtypes to update for the columns
 
@@ -206,23 +218,26 @@ class UpdateColumnsDataTypesAPIView(APIView):
                 # Cast original dataframe column data to received type
                 try:
                     original_df = conversion_engine.convert_col_date_type(original_df, col_name, type_to_cast, invalid_values_handling_option, missing_values_handling_option, default_value)
+                    logger.debug(f'UpdateColumnsDataTypesAPIView : post : Converted column "{col_name}" to type "{type_to_cast}"')
                 except ValueError as e:
+                    logger.error(f'UpdateColumnsDataTypesAPIView : post : Error converting column "{col_name}" to type "{type_to_cast}": {str(e)}')
                     return Response({ "message" : "Error cleaning dataframe", "error" : str(e) }, status=status.HTTP_400_BAD_REQUEST)
                 except TypeError as e:
+                    logger.error(f'UpdateColumnsDataTypesAPIView : post : Invalid data passed for column "{col_name}": {str(e)}')
                     return Response({ "message" : "Invalid data passed", "error" : str(e) }, status=status.HTTP_400_BAD_REQUEST)
                 except Exception as e:
+                    logger.error(f'UpdateColumnsDataTypesAPIView : post : Error cleaning dataframe for column "{col_name}": {str(e)}')
                     return Response({ "message" : "Error cleaning dataframe", "error" : str(e) }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
                 # Replace updated column in the cleaned dataframe
                 df_cleaned[col_name] = original_df[col_name]
-                
-                print(f"Converted dtype for column '{col_name}' to '{df_cleaned[col_name].dtype}")
 
             # Caching the updated cleaned dataframe
             df_cleaned_bytes = pickle.dumps(df_cleaned)
             cache.set(cleaned_df_key, df_cleaned_bytes)
-            
-            # Create updated dtypes dict to be sent to the clinet
+            logger.debug('UpdateColumnsDataTypesAPIView : post : Updated cleaned dataframe cached')
+
+            # Create updated dtypes dict to be sent to the client
             df_cleaned_dtypes = {} 
             for col_name in df_cleaned:
                 df_cleaned_dtypes[col_name] = str(df_cleaned[col_name].dtype)
@@ -234,8 +249,8 @@ class UpdateColumnsDataTypesAPIView(APIView):
 
             paginator = CustomPagination()
             paginated_data = paginator.paginate_queryset(df_cleaned.to_dict(orient='records'), request)
+            logger.debug('UpdateColumnsDataTypesAPIView : post : Paginated the cleaned data')
 
-            print("Updated dtypes:\n", df_cleaned_dtypes) # TODO: TBR
             return Response({
                 "message": "Request is successful.", 
                 "data": paginated_data, 
@@ -244,5 +259,5 @@ class UpdateColumnsDataTypesAPIView(APIView):
                 "cleaned_data_key" : cleaned_df_key}, 
                 status=status.HTTP_200_OK)
         
-        print(serializer.errors) # TODO: TBR
+        logger.error(f'UpdateColumnsDataTypesAPIView : post : Validation failed for request data: {serializer.errors}')
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
