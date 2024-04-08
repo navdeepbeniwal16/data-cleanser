@@ -79,6 +79,11 @@ export default function DataUploadPage() {
           alignItems: "center",
         }}
       >
+        <img
+          src="data_cleaning_illus.svg"
+          alt="Illustration representing data files"
+          style={{ width: "40%", height: "auto", padding: "15px" }}
+        />
         <Typography variant="h6" gutterBottom>
           Upload Your Data File
         </Typography>
