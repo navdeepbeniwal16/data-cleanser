@@ -255,8 +255,6 @@ class Inference:
             # Check boolean and categorical data in numerical format
             if self.is_boolean_type(data_column):
                 return DataTypes.BOOLEAN
-            if self.is_categorical_type(data_column):
-                return DataTypes.CATEGORY
             return inferred_data_type
 
         # Infer timedelta data type
