@@ -38,6 +38,14 @@ def hello_data_cleanser(request):
     return Response({"message": "Hello! Welcome to data cleanser."})
 
 class DataFileUploadAPIView(APIView):
+    """
+    API view for uploading data files.
+
+    Handles the uploading of data files (e.g., CSV, Excel) and processes
+    them for further analysis or manipulation. It uses the `MultiPartParser` and
+    `FormParser` to parse the incoming request data and serializes the data using the `DataFileSerializer`.
+    """
+    
     parser_classes = (MultiPartParser, FormParser) # for parsing request data
     serializer_class = DataFileSerializer
 
@@ -151,6 +159,13 @@ class DataFileUploadAPIView(APIView):
         }
     
 class PaginatedDataView(APIView):
+    """
+    This view returns a page of data from the cleaned dataset.
+
+    The view takes a key for the cleaned data stored in the cache and a page number
+    from the request. It then returns the corresponding page of data from the dataset.
+    """
+
     def get(self, request, cleaned_data_key):
         
         logger.debug(f'PaginatedDataView : get : Requesting paginated data for key: {cleaned_data_key}')
@@ -185,6 +200,13 @@ class PaginatedDataView(APIView):
             status=status.HTTP_200_OK)
 
 class UpdateColumnsDataTypesAPIView(APIView):
+    """
+    This view updates the data types of specified columns along with the data formats in the dataset.
+
+    It receives a request containing the changes to be made to the data types
+    of certain columns and applies these changes to the cleaned dataset.
+    """
+
     serializer_class = DataTypesChangeRequestSerializer
 
     def post(self, request):
