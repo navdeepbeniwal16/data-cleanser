@@ -4,6 +4,7 @@ from django.views.generic import View
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework.pagination import PageNumberPagination
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework import status
 from .serializers import DataFileSerializer, DataTypesChangeRequestSerializer
@@ -22,6 +23,9 @@ logger = logging.getLogger("django")
 cache = redis.Redis()
 inference_engine = Inference(0.5)
 conversion_engine = Convertor()
+
+class CustomPagination(PageNumberPagination):
+    page_size = 10  # Default number of items per page
 
 
 class IndexView(View):
@@ -93,12 +97,15 @@ class DataFileUploadAPIView(APIView):
             for col_name in df_cleaned:
                 if df_cleaned[col_name].dtype == 'complex':
                     df_cleaned[col_name] = df_cleaned[col_name].astype(str)
+
+            paginator = CustomPagination()
+            paginated_data = paginator.paginate_queryset(df_cleaned.to_dict(orient='records'), request)
         
             return Response(
                 {
                     "message": "File cleaned successfully", 
                     "dtypes": df_cleaning_result["dtypes"], 
-                    "data": df_cleaning_result["data"], 
+                    "data": paginated_data, 
                     "original_data_key" : original_df_key,
                     "cleaned_data_key" : cleaned_df_key
                 },  status=status.HTTP_200_OK)
@@ -196,8 +203,17 @@ class UpdateColumnsDataTypesAPIView(APIView):
                 if df_cleaned[col_name].dtype == 'complex':
                     df_cleaned[col_name] = df_cleaned[col_name].astype(str)
 
+            paginator = CustomPagination()
+            paginated_data = paginator.paginate_queryset(df_cleaned.to_dict(orient='records'), request)
+
             print("Updated dtypes:\n", df_cleaned_dtypes) # TODO: TBR
-            return Response({"message": "Request is successful.", "data": df_cleaned, "dtypes" : df_cleaned_dtypes, "original_data_key" : original_df_key, "cleaned_data_key" : cleaned_df_key}, status=status.HTTP_200_OK)
+            return Response({
+                "message": "Request is successful.", 
+                "data": paginated_data, 
+                "dtypes" : df_cleaned_dtypes, 
+                "original_data_key" : original_df_key, 
+                "cleaned_data_key" : cleaned_df_key}, 
+                status=status.HTTP_200_OK)
         
         print(serializer.errors) # TODO: TBR
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

@@ -9,35 +9,10 @@ import { Typography } from "@mui/material";
 import dataTypeMappings from "./dataTypes";
 import Box from "@mui/material/Box";
 
-let dataRowsCount = 0;
-
 function getDatasetColumnNames(data) {
   console.log("getDatasetColumnNames: Data:", data);
   return Object.keys(data);
 }
-
-const getListRowsData = (data) => {
-  // Get an array of column names from the data property
-  const columns = getDatasetColumnNames(data);
-
-  // Find out the number of rows by checking the length of the array of the first property
-  const numRows = data[columns[0]].length;
-  const rows = [];
-
-  // Create an array of row objects
-  for (let i = 0; i < numRows; i++) {
-    let row = {
-      id: dataRowsCount,
-    };
-    columns.forEach((column) => {
-      row[column] = data[column][i];
-    });
-    rows.push(row);
-    dataRowsCount++;
-  }
-
-  return rows;
-};
 
 export default function DataTable({ data, dtypes }) {
   return (
@@ -65,9 +40,9 @@ export default function DataTable({ data, dtypes }) {
             </TableRow>
           </TableHead>
           <TableBody>
-            {getListRowsData(data).map((row, rowIndex) => (
+            {data.map((row, rowIndex) => (
               <TableRow key={rowIndex}>
-                {getDatasetColumnNames(data).map((colName, colIndex) => (
+                {getDatasetColumnNames(row).map((colName, colIndex) => (
                   <TableCell key={colIndex}>{String(row[colName])}</TableCell>
                 ))}
               </TableRow>
