@@ -1,19 +1,22 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useLocation, Link as RouterLink } from "react-router-dom";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
-import CssBaseline from "@mui/material/CssBaseline";
-import Box from "@mui/material/Box";
-import Container from "@mui/material/Container";
-import Grid from "@mui/material/Grid";
-import Paper from "@mui/material/Paper";
-import Link from "@mui/material/Link";
-import { Breadcrumbs } from "@mui/material";
-import Snackbar from "@mui/material/Snackbar";
-import Alert from "@mui/material/Alert";
+import {
+  CssBaseline,
+  Box,
+  Container,
+  Grid,
+  Paper,
+  Link,
+  Breadcrumbs,
+  Snackbar,
+  Alert,
+} from "@mui/material";
 import DataTable from "./DataTable";
 import DTypesConfigurationPane from "./DTypesConfigurationPane";
 
 const defaultTheme = createTheme();
+let currentPageNumber = 1;
 
 export default function DashboardPage() {
   const location = useLocation();
@@ -38,10 +41,56 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (!receivedData) {
-      // If there's no data, redirect to the upload page
+      // Redirect to the upload page if no receivedData is found
       navigate("/");
     }
   }, [receivedData, navigate]);
+
+  const getPreviousPage = () => {
+    if (currentPageNumber > 1) {
+      getPage(currentPageNumber - 1);
+    }
+  };
+
+  const getNextPage = () => {
+    getPage(currentPageNumber + 1);
+  };
+
+  const getPage = (pageNumber) => {
+    fetch(
+      "http://localhost:8000/data_cleanser/data/" +
+        receivedData["cleaned_data_key"] +
+        "?page=" +
+        pageNumber,
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    )
+      .then((response) => {
+        if (response.ok) {
+          return response.json();
+        }
+        throw new Error("Error occured while serving the request.");
+      })
+      .then((data) => {
+        currentPageNumber = pageNumber;
+        const dataToReplaceWith = { ...receivedData, data: data["data"] };
+        setReceivedData(dataToReplaceWith);
+      })
+      .catch((error) => {
+        console.error("Error occured while fetching data from backend:", error);
+        // Showing an error alert/snackbar
+        openSnackbar({
+          vertical: "bottom",
+          horizontal: "center",
+          requestSuccess: "error",
+          message: "Reached the end of the dataset.",
+        })();
+      });
+  };
 
   const onApplyDtypesConfigs = (newDtypesConfigsArr) => {
     const requestData = {
@@ -51,22 +100,25 @@ export default function DashboardPage() {
       cleaned_data_key: receivedData["cleaned_data_key"],
     };
 
-    fetch("http://localhost:8000/data_cleanser/update-columns-dtypes/", {
-      method: "POST",
-      body: JSON.stringify(requestData),
-      headers: {
-        "Content-Type": "application/json",
-      },
-    })
+    fetch(
+      "http://localhost:8000/data_cleanser/update-columns-dtypes/?page=" +
+        currentPageNumber,
+      {
+        method: "POST",
+        body: JSON.stringify(requestData),
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    )
       .then((response) => {
         if (response.ok) {
           return response.json();
         }
-        throw new Error("Network response was not ok.");
+        throw new Error("Error occured while serving the request.");
       })
       .then((data) => {
-        console.log("Dtypes updated successfully:", data);
-        // Perform any additional actions with the response data
+        // Showing a success alert/snackbar
         openSnackbar({
           vertical: "bottom",
           horizontal: "center",
@@ -76,10 +128,7 @@ export default function DashboardPage() {
         setReceivedData(data);
       })
       .catch((error) => {
-        console.error(
-          "There has been a problem with your fetch operation:",
-          error
-        );
+        console.error("Error occured while fetching data from backend:", error);
         openSnackbar({
           vertical: "bottom",
           horizontal: "center",
@@ -151,6 +200,9 @@ export default function DashboardPage() {
                   <DataTable
                     data={receivedData["data"]}
                     dtypes={receivedData["dtypes"]}
+                    currentPage={currentPageNumber}
+                    onPrevPage={getPreviousPage}
+                    onNextPage={getNextPage}
                   />
                 </Paper>
               </Grid>

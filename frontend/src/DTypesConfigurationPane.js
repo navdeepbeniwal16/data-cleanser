@@ -52,7 +52,6 @@ export default function DTypesConfigurationPane({ dtypes, onApply }) {
   };
 
   const handleSubmit = () => {
-    // Construct the payload with the changes
     const changes = Object.keys(dtypes).reduce((acc, column) => {
       if (dtypes[column] !== selectedTypes[column]) {
         acc.push({
@@ -71,6 +70,7 @@ export default function DTypesConfigurationPane({ dtypes, onApply }) {
 
   return (
     <Box sx={{ width: "100%" }}>
+      {/* Title for the configuration pane */}
       <Typography
         component="h2"
         variant="h6"
@@ -82,13 +82,21 @@ export default function DTypesConfigurationPane({ dtypes, onApply }) {
         Column Type Configuration
       </Typography>
 
+      {/* Mapping over each column to create an accordion for configuration */}
       {Object.entries(dtypes).map(([column, type]) => (
         <Accordion key={column}>
-          <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-            <Typography>{column}</Typography>
+          <AccordionSummary
+            expandIcon={<ExpandMoreIcon />}
+            sx={{ overflow: "hidden" }}
+          >
+            <Typography sx={{ textAlign: "left" }}>
+              {String(column).toUpperCase()}
+            </Typography>
           </AccordionSummary>
           <AccordionDetails>
             <Typography>Current type: {dataTypeMappings[type]}</Typography>
+
+            {/* Dropdown for selecting a new data type for the column */}
             <FormControl fullWidth margin="normal">
               <InputLabel>New type</InputLabel>
               <Select
@@ -103,6 +111,8 @@ export default function DTypesConfigurationPane({ dtypes, onApply }) {
                 ))}
               </Select>
             </FormControl>
+
+            {/* Dropdown for selecting how to handle missing values */}
             <FormControl fullWidth margin="normal">
               <InputLabel>Missing values</InputLabel>
               <Select
@@ -114,11 +124,13 @@ export default function DTypesConfigurationPane({ dtypes, onApply }) {
               >
                 {missingValueOptions.map((option) => (
                   <MenuItem key={option} value={option}>
-                    {option}
+                    {String(option).toUpperCase()}
                   </MenuItem>
                 ))}
               </Select>
             </FormControl>
+
+            {/* Input field for specifying a default value if 'default' option is selected for missing values */}
             <TextField
               fullWidth
               margin="normal"
@@ -130,6 +142,8 @@ export default function DTypesConfigurationPane({ dtypes, onApply }) {
           </AccordionDetails>
         </Accordion>
       ))}
+
+      {/* Button to apply the changes */}
       <Button variant="contained" onClick={handleSubmit} sx={{ mt: 2 }}>
         Apply
       </Button>
