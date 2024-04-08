@@ -1,15 +1,17 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useLocation, Link as RouterLink } from "react-router-dom";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
-import CssBaseline from "@mui/material/CssBaseline";
-import Box from "@mui/material/Box";
-import Container from "@mui/material/Container";
-import Grid from "@mui/material/Grid";
-import Paper from "@mui/material/Paper";
-import Link from "@mui/material/Link";
-import { Breadcrumbs } from "@mui/material";
-import Snackbar from "@mui/material/Snackbar";
-import Alert from "@mui/material/Alert";
+import {
+  CssBaseline,
+  Box,
+  Container,
+  Grid,
+  Paper,
+  Link,
+  Breadcrumbs,
+  Snackbar,
+  Alert,
+} from "@mui/material";
 import DataTable from "./DataTable";
 import DTypesConfigurationPane from "./DTypesConfigurationPane";
 
@@ -39,7 +41,7 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (!receivedData) {
-      // If there's no data, redirect to the upload page
+      // Redirect to the upload page if no receivedData is found
       navigate("/");
     }
   }, [receivedData, navigate]);
@@ -71,21 +73,16 @@ export default function DashboardPage() {
         if (response.ok) {
           return response.json();
         }
-        throw new Error("Network response was not ok.");
+        throw new Error("Error occured while serving the request.");
       })
       .then((data) => {
         currentPageNumber = pageNumber;
-        console.log("Paginated data fetched successfully:", data);
         const dataToReplaceWith = { ...receivedData, data: data["data"] };
-
         setReceivedData(dataToReplaceWith);
-        console.log("Replaced received data:", receivedData);
       })
       .catch((error) => {
-        console.error(
-          "There has been a problem with your fetch operation:",
-          error
-        );
+        console.error("Error occured while fetching data from backend:", error);
+        // Showing an error alert/snackbar
         openSnackbar({
           vertical: "bottom",
           horizontal: "center",
@@ -118,11 +115,10 @@ export default function DashboardPage() {
         if (response.ok) {
           return response.json();
         }
-        throw new Error("Network response was not ok.");
+        throw new Error("Error occured while serving the request.");
       })
       .then((data) => {
-        console.log("Dtypes updated successfully:", data);
-        // Perform any additional actions with the response data
+        // Showing a success alert/snackbar
         openSnackbar({
           vertical: "bottom",
           horizontal: "center",
@@ -132,10 +128,7 @@ export default function DashboardPage() {
         setReceivedData(data);
       })
       .catch((error) => {
-        console.error(
-          "There has been a problem with your fetch operation:",
-          error
-        );
+        console.error("Error occured while fetching data from backend:", error);
         openSnackbar({
           vertical: "bottom",
           horizontal: "center",

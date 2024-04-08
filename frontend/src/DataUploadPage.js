@@ -7,7 +7,9 @@ import {
   Container,
   Paper,
   LinearProgress,
+  Snackbar,
 } from "@mui/material";
+import MuiAlert from "@mui/material/Alert";
 import { styled } from "@mui/material/styles";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 
@@ -15,10 +17,23 @@ const Input = styled("input")({
   display: "none",
 });
 
+const Alert = React.forwardRef(function Alert(props, ref) {
+  return <MuiAlert elevation={6} ref={ref} variant="filled" {...props} />;
+});
+
 export default function DataUploadPage() {
   const navigate = useNavigate();
   const [file, setFile] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [snackbarState, setSnackbarState] = useState({
+    open: false,
+    message: "",
+    severity: "error",
+    vertical: "bottom",
+    horizontal: "center",
+  });
+
+  const { vertical, horizontal } = snackbarState;
 
   const handleFileChange = (event) => {
     setFile(event.target.files[0]);
@@ -28,35 +43,30 @@ export default function DataUploadPage() {
     if (file) {
       setIsUploading(true);
 
-      // Create a FormData instance to build the form request
       const formData = new FormData();
       formData.append("file", file);
-      // Append the 'uploaded_on' field with the current datetime in ISO format
       formData.append("uploaded_on", new Date().toISOString());
 
-      // Use the fetch API to POST the form data
       fetch("http://localhost:8000/data_cleanser/upload-file/", {
         method: "POST",
         body: formData,
       })
         .then((response) => {
           if (response.ok) {
-            return response.json(); // or response.text() if the response is not in JSON format
+            return response.json();
           }
-          throw new Error("Network response was not ok.");
+          throw new Error("File upload failed.");
         })
         .then((data) => {
-          console.log("File uploaded successfully:", data);
-          // Perform any additional actions with the response data
-
-          // Navigate to Dashboard
           navigate("/dashboard", { state: { data: data } });
         })
         .catch((error) => {
-          console.error(
-            "There has been a problem with your fetch operation:",
-            error
-          );
+          setSnackbarState({
+            ...snackbarState,
+            open: true,
+            message: "Error occured while processing. Please check the format",
+            severity: "error",
+          });
         })
         .finally(() => {
           setIsUploading(false);
@@ -65,6 +75,10 @@ export default function DataUploadPage() {
     } else {
       alert("Please select a file to upload.");
     }
+  };
+
+  const closeSnackbar = () => {
+    setSnackbarState({ ...snackbarState, open: false });
   };
 
   return (
@@ -91,6 +105,7 @@ export default function DataUploadPage() {
           Please select a CSV or Excel file to upload. The file should contain
           your dataset for processing.
         </Typography>
+        {/* File input for selecting a file */}
         <label htmlFor="contained-button-file">
           <Input
             accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel"
@@ -108,6 +123,7 @@ export default function DataUploadPage() {
             Select File
           </Button>
         </label>
+        {/* Displaying the selected file name and a loading indicator when uploading */}
         {file && (
           <Box sx={{ width: "100%", mb: 2 }}>
             <Typography variant="body2" gutterBottom>
@@ -116,6 +132,7 @@ export default function DataUploadPage() {
             {isUploading && <LinearProgress />}
           </Box>
         )}
+        {/* Button to initiate file upload */}
         <Button
           variant="outlined"
           onClick={handleFileUpload}
@@ -123,6 +140,18 @@ export default function DataUploadPage() {
         >
           Upload File
         </Button>
+        {/* Snackbar for displaying messages */}
+        <Snackbar
+          anchorOrigin={{ vertical, horizontal }}
+          open={snackbarState.open}
+          autoHideDuration={3000}
+          onClose={closeSnackbar}
+          key={vertical + horizontal}
+        >
+          <Alert onClose={closeSnackbar} severity={snackbarState.severity}>
+            {snackbarState.message}
+          </Alert>
+        </Snackbar>
       </Paper>
     </Container>
   );

@@ -1,17 +1,18 @@
 import * as React from "react";
-import Link from "@mui/material/Link";
-import Table from "@mui/material/Table";
-import TableBody from "@mui/material/TableBody";
-import TableCell from "@mui/material/TableCell";
-import TableHead from "@mui/material/TableHead";
-import TableRow from "@mui/material/TableRow";
-import { Typography, IconButton } from "@mui/material";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableRow,
+  Typography,
+  IconButton,
+} from "@mui/material";
 import { ArrowBackIos, ArrowForwardIos } from "@mui/icons-material";
 import dataTypeMappings from "./dataTypes";
 import Box from "@mui/material/Box";
 
 function getDatasetColumnNames(data) {
-  console.log("getDatasetColumnNames: Data:", data);
   return Object.keys(data);
 }
 
@@ -38,6 +39,7 @@ export default function DataTable({
           <IconButton aria-label="previous page" onClick={onPrevPage}>
             <ArrowBackIos />
           </IconButton>
+          {/* Displaying the current page number */}
           {}
           {currentPage}
           {}
@@ -51,15 +53,17 @@ export default function DataTable({
         <Table size="small">
           <TableHead>
             <TableRow>
+              {/* Displaying the columns with their corresponding data types */}
               {Object.entries(dtypes).map(([columnName, type]) => (
-                <TableCell key={columnName}>
-                  <strong>{columnName}</strong> <br></br>
+                <TableCell key={columnName} sx={{ verticalAlign: "top" }}>
+                  <strong>{String(columnName).toUpperCase()}</strong> <br></br>
                   {dataTypeMappings[type]}
                 </TableCell>
               ))}
             </TableRow>
           </TableHead>
           <TableBody>
+            {/* Iterating over each row in the dataset */}
             {data.map((row, rowIndex) => (
               <TableRow key={rowIndex}>
                 {getDatasetColumnNames(row).map((colName, colIndex) => (
